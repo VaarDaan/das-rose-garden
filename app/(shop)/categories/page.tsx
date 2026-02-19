@@ -1,18 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Product } from '@/lib/types'
 import ProductCard from '@/components/home/ProductCard'
-import { Filter, X, ChevronDown } from 'lucide-react'
+import { Filter, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const TYPES = ['Roses', 'Seasonal', 'Bouquets', 'Plants', 'Gifts', 'Exotic']
 const SIZES = ['Small', 'Medium', 'Large', 'XL']
 const COLORS = ['Red', 'Pink', 'White', 'Yellow', 'Orange', 'Purple', 'Mixed']
 
-export default function CategoriesPage() {
+function CategoriesContent() {
     const searchParams = useSearchParams()
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -100,7 +100,7 @@ export default function CategoriesPage() {
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-sm font-bold text-[#2E2E2E]">Filters</span>
                             {activeFiltersCount > 0 && (
-                                <button onClick={clearFilters} className="text-xs text-[#FF6600] flex items-center gap-0.5">
+                                <button onClick={clearFilters} className="text-xs text-[#FF6600]">
                                     Clear all
                                 </button>
                             )}
@@ -131,10 +131,7 @@ export default function CategoriesPage() {
                                     <button
                                         key={s}
                                         onClick={() => setSelectedSize(selectedSize === s ? '' : s)}
-                                        className={cn(
-                                            'size-chip text-xs',
-                                            selectedSize === s ? 'selected' : ''
-                                        )}
+                                        className={cn('size-chip text-xs', selectedSize === s ? 'selected' : '')}
                                     >
                                         {s}
                                     </button>
@@ -190,5 +187,22 @@ export default function CategoriesPage() {
                 </main>
             </div>
         </div>
+    )
+}
+
+// Wrap in Suspense — required by Next.js when using useSearchParams()
+export default function CategoriesPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="rounded-xl bg-[#F5F5F5] animate-pulse aspect-[3/4]" />
+                    ))}
+                </div>
+            </div>
+        }>
+            <CategoriesContent />
+        </Suspense>
     )
 }

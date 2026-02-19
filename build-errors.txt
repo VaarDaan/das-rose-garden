@@ -1,0 +1,43 @@
+
+> rg-app@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 8.7s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/16) ...
+  Generating static pages using 11 workers (4/16) 
+  Generating static pages using 11 workers (8/16) 
+  Generating static pages using 11 workers (12/16) 
+Γ£ô Generating static pages using 11 workers (16/16) in 516.3ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî ╞Æ /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /admin
+Γö£ Γùï /admin/banners
+Γö£ Γùï /admin/orders
+Γö£ Γùï /admin/products
+Γö£ ╞Æ /admin/products/[id]
+Γö£ Γùï /admin/sections
+Γö£ ╞Æ /admin/users
+Γö£ Γùï /cart
+Γö£ Γùï /categories
+Γö£ Γùï /checkout
+Γö£ Γùï /login
+Γö£ Γùï /orders
+Γö£ ╞Æ /orders/[id]
+Γö£ ╞Æ /products/[id]
+Γöö Γùï /profile
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Image, LayoutGrid, Package, ShoppingBag, Users, BarChart3, Flower2 } from 'lucide-react'
+import { Image, LayoutGrid, Package, ShoppingBag, Users, BarChart3, Flower2, LogOut } from 'lucide-react'
+import { adminLogout } from '@/app/admin/login/actions'
 
 const NAV = [
     { href: '/admin', label: 'Dashboard', icon: BarChart3 },
@@ -52,10 +53,19 @@ export default function AdminSidebar() {
                 })}
             </nav>
 
-            <div className="px-5 py-4 border-t border-white/10">
+            <div className="px-5 py-4 border-t border-white/10 flex flex-col gap-3">
                 <Link href="/" className="text-xs text-white/40 hover:text-white/70 transition-colors">
                     ← Back to Store
                 </Link>
+                <form action={adminLogout}>
+                    <button
+                        type="submit"
+                        className="flex items-center gap-2 text-xs text-red-400/70 hover:text-red-400 transition-colors w-full"
+                    >
+                        <LogOut size={13} />
+                        Sign Out
+                    </button>
+                </form>
             </div>
         </aside>
     )

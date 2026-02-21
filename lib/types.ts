@@ -38,7 +38,7 @@ export interface Order {
     items: CartItemSnapshot[]
     total: number
     status: 'confirmed' | 'processed' | 'shipped' | 'delivered'
-    payment_method: 'upi' | 'cod'
+    payment_method: 'online' | 'cod'
     address: ShippingAddress
     created_at: string
 }

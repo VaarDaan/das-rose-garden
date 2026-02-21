@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/utils'
 import { Flower2, CheckCircle, MapPin, CreditCard } from 'lucide-react'
 import Link from 'next/link'
+import Script from 'next/script'
+import { createShipment } from '@/lib/shipping'
 
 const schema = z.object({
     full_name: z.string().min(2, 'Name is required'),
@@ -24,9 +26,10 @@ type FormData = z.infer<typeof schema>
 
 export default function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCartStore()
-    const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('cod')
+    const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('cod')
     const [placing, setPlacing] = useState(false)
     const [placed, setPlaced] = useState<string | null>(null)
+    const [trackingInfo, setTrackingInfo] = useState<{ id: string, courier: string } | null>(null)
     const router = useRouter()
     const supabase = createClient()
 
@@ -37,11 +40,8 @@ export default function CheckoutPage() {
     const shipping = totalPrice() >= 999 ? 0 : 49
     const total = totalPrice() + shipping
 
-    const onSubmit = async (data: FormData) => {
-        setPlacing(true)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push('/login'); return }
-
+    const saveOrderAndShip = async (user: any, formData: FormData, paymentMode: 'online' | 'cod', rzpResponse: any | null = null) => {
+        // 1. Save strictly to DB
         const { data: order, error } = await supabase
             .from('orders')
             .insert({
@@ -49,17 +49,101 @@ export default function CheckoutPage() {
                 items: items,
                 total,
                 status: 'confirmed',
-                payment_method: paymentMethod,
-                address: data,
+                payment_method: paymentMode,
+                address: formData,
             })
             .select()
             .single()
 
-        if (!error && order) {
-            clearCart()
-            setPlaced(order.id)
+        if (error || !order) {
+            alert('Failed to save order to database')
+            setPlacing(false)
+            return
         }
+
+        // 2. Call mock shipping integration
+        try {
+            const shipmentRes = await createShipment({
+                orderId: order.id,
+                items,
+                address: formData
+            });
+            if (shipmentRes.success && shipmentRes.trackingId && shipmentRes.courierName) {
+                setTrackingInfo({ id: shipmentRes.trackingId, courier: shipmentRes.courierName });
+            }
+        } catch (err) {
+            console.error('Shipping integration warning:', err)
+        }
+
+        clearCart()
+        setPlaced(order.id)
         setPlacing(false)
+    }
+
+    const onSubmit = async (formData: FormData) => {
+        setPlacing(true)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { router.push('/login'); return }
+
+        if (paymentMethod === 'online') {
+            try {
+                // 1. Create native Razorpay order
+                const res = await fetch('/api/razorpay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: total, receipt: `rcpt_${Date.now()}` })
+                })
+                const rzpOrder = await res.json()
+
+                if (!res.ok) {
+                    alert('Payment gateway error. Please try again.')
+                    setPlacing(false)
+                    return
+                }
+
+                // 2. Load standard Razorpay UI
+                const options = {
+                    key: 'rzp_test_SIr1jxT4ytMqqL', // Sandbox Key
+                    amount: rzpOrder.amount,
+                    currency: rzpOrder.currency,
+                    name: 'Das Rose Garden',
+                    description: 'Order Payment',
+                    order_id: rzpOrder.id,
+                    handler: async function (response: any) {
+                        console.log('Payment successful via Razorpay', response);
+                        await saveOrderAndShip(user, formData, 'online', response);
+                    },
+                    prefill: {
+                        name: formData.full_name,
+                        email: user.email,
+                        contact: formData.phone,
+                    },
+                    theme: {
+                        color: '#FF6600'
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            setPlacing(false)
+                        }
+                    }
+                };
+
+                const rzp = new (window as any).Razorpay(options);
+                rzp.on('payment.failed', function (response: any) {
+                    alert('Payment failed. Try again.');
+                    console.error(response.error);
+                    setPlacing(false)
+                });
+                rzp.open();
+            } catch (err) {
+                console.error('Razorpay process failed:', err)
+                setPlacing(false)
+                alert('Something went wrong. Please check your connection.')
+            }
+        } else {
+            // Cash on delivery
+            await saveOrderAndShip(user, formData, 'cod');
+        }
     }
 
     if (placed) {
@@ -70,7 +154,16 @@ export default function CheckoutPage() {
                 </div>
                 <h2 className="text-2xl font-bold text-[#2E2E2E] mb-2">Order Placed! 🌹</h2>
                 <p className="text-sm text-[#767676] mb-2">Thank you for your order</p>
-                <p className="text-xs text-[#767676] mb-6 font-mono bg-[#F5F5F5] px-3 py-1 rounded-lg">#{placed.slice(0, 8).toUpperCase()}</p>
+                <p className="text-xs text-[#767676] mb-4 font-mono bg-[#F5F5F5] px-3 py-1 rounded-lg">#{placed.slice(0, 8).toUpperCase()}</p>
+
+                {trackingInfo && (
+                    <div className="bg-[#F9F0EC] p-3 rounded-lg border border-[#FF6600]/20 mb-6 w-full max-w-xs text-left">
+                        <p className="text-xs font-semibold text-[#FF6600] uppercase mb-1">Shipping Info</p>
+                        <p className="text-sm text-[#2E2E2E] font-medium">Tracking: {trackingInfo.id}</p>
+                        <p className="text-xs text-[#767676]">Courier: {trackingInfo.courier}</p>
+                    </div>
+                )}
+
                 <div className="flex gap-3">
                     <Link href={`/orders/${placed}`} className="btn-primary">Track Order</Link>
                     <Link href="/" className="btn-secondary">Continue Shopping</Link>
@@ -91,6 +184,8 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-[#F5F5F5]">
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
             <div className="bg-white px-4 py-3 border-b border-[#E8E8E8]">
                 <h1 className="text-lg font-bold text-[#2E2E2E]">Checkout</h1>
             </div>
@@ -152,7 +247,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { method: 'upi' as const, label: 'UPI', emoji: '📱', sub: 'PhonePe, GPay, Paytm' },
+                            { method: 'online' as const, label: 'Pay Online', emoji: '💳', sub: 'UPI, Cards, Wallets via Razorpay' },
                             { method: 'cod' as const, label: 'Cash on Delivery', emoji: '💵', sub: 'Pay when delivered' },
                         ].map(({ method, label, emoji, sub }) => (
                             <button
@@ -160,8 +255,8 @@ export default function CheckoutPage() {
                                 type="button"
                                 onClick={() => setPaymentMethod(method)}
                                 className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${paymentMethod === method
-                                        ? 'border-[#FF6600] bg-orange-50'
-                                        : 'border-[#E8E8E8] hover:border-gray-300'
+                                    ? 'border-[#FF6600] bg-orange-50'
+                                    : 'border-[#E8E8E8] hover:border-gray-300'
                                     }`}
                             >
                                 <span className="text-2xl mb-1">{emoji}</span>
@@ -202,7 +297,7 @@ export default function CheckoutPage() {
                     disabled={placing}
                     className="btn-primary w-full py-4 text-base !rounded-xl"
                 >
-                    {placing ? 'Placing Order…' : `Place Order · ${formatPrice(total)}`}
+                    {placing ? 'Processing…' : `Place Order · ${formatPrice(total)}`}
                 </button>
             </form>
         </div>

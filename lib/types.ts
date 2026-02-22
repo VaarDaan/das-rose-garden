@@ -3,7 +3,9 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export interface Profile {
     id: string
     full_name: string | null
-    phone: string
+    phone: string | null
+    email: string | null
+    address: ShippingAddress | null
     created_at: string
 }
 

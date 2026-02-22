@@ -264,6 +264,22 @@ export default function LoginPage() {
                             <p className="text-sm text-[#767676] mt-1">Join Das Rose Garden</p>
                         </div>
 
+                        {/* Google */}
+                        <button
+                            onClick={handleGoogleLogin}
+                            disabled={googleLoading}
+                            className="w-full flex items-center justify-center gap-3 border border-[#E8E8E8] rounded-lg px-4 py-3 font-semibold text-[#2E2E2E] hover:bg-[#F5F5F5] transition-colors mb-4 disabled:opacity-60"
+                        >
+                            <GoogleIcon />
+                            {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                        </button>
+
+                        {/* Divider */}
+                        <div className="relative my-4">
+                            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-[#E8E8E8]" /></div>
+                            <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-[#767676]">or sign up with email</span></div>
+                        </div>
+
                         {/* Email */}
                         <label className="block text-xs font-semibold text-[#2E2E2E] mb-1.5">Email <span className="text-[#FF6600]">*</span></label>
                         <div className="flex items-center bg-[#F5F5F5] rounded-lg px-3 border border-[#E8E8E8] focus-within:border-[#FF6600] focus-within:bg-white transition-all mb-3">

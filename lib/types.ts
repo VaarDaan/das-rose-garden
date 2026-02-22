@@ -39,9 +39,11 @@ export interface Order {
     user_id: string
     items: CartItemSnapshot[]
     total: number
-    status: 'confirmed' | 'processed' | 'shipped' | 'delivered'
+    status: 'confirmed' | 'packed' | 'dispatched' | 'out_for_delivery' | 'delivered'
     payment_method: 'online' | 'cod'
     address: ShippingAddress
+    tracking_id: string | null
+    courier_name: string | null
     created_at: string
 }
 

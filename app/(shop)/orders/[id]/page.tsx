@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Order } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
-import { CheckCircle, Clock, Truck, Package, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Clock, Truck, Package, ArrowLeft, Box, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
@@ -15,12 +15,13 @@ interface Props {
 
 const STEPS = [
     { key: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, desc: 'Your order has been received' },
-    { key: 'processed', label: 'Processing', icon: Package, desc: 'We are preparing your flowers' },
-    { key: 'shipped', label: 'Shipped', icon: Truck, desc: 'Your order is on the way' },
+    { key: 'packed', label: 'Packed', icon: Box, desc: 'Your flowers are being packed' },
+    { key: 'dispatched', label: 'Dispatched', icon: Truck, desc: 'Handed over to courier service' },
+    { key: 'out_for_delivery', label: 'Out for Delivery', icon: MapPin, desc: 'Your order is nearby!' },
     { key: 'delivered', label: 'Delivered', icon: CheckCircle, desc: 'Order delivered successfully' },
 ]
 
-const STATUS_ORDER = ['confirmed', 'processed', 'shipped', 'delivered']
+const STATUS_ORDER = ['confirmed', 'packed', 'dispatched', 'out_for_delivery', 'delivered']
 
 export default function OrderDetailPage({ params }: Props) {
     const [order, setOrder] = useState<Order | null>(null)
@@ -30,7 +31,6 @@ export default function OrderDetailPage({ params }: Props) {
     useEffect(() => {
         const fetchAndSubscribe = async () => {
             const { id } = await params
-            // Initial fetch
             const { data } = await supabase.from('orders').select('*').eq('id', id).single()
             setOrder(data as Order)
             setLoading(false)
@@ -67,9 +67,7 @@ export default function OrderDetailPage({ params }: Props) {
                     <ArrowLeft size={20} className="text-[#2E2E2E]" />
                 </Link>
                 <div>
-                    <h1 className="text-base font-bold text-[#2E2E2E]">
-                        Order #{order.id.slice(0, 8).toUpperCase()}
-                    </h1>
+                    <h1 className="text-base font-bold text-[#2E2E2E]">Order #{order.id.slice(0, 8).toUpperCase()}</h1>
                     <p className="text-xs text-[#767676]">
                         Placed {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
@@ -77,6 +75,36 @@ export default function OrderDetailPage({ params }: Props) {
             </div>
 
             <div className="max-w-xl mx-auto px-4 py-4 space-y-4">
+
+                {/* Courier tracking banner */}
+                {(order.courier_name || order.tracking_id) && (
+                    <div className="bg-gradient-to-r from-[#FF6600] to-rose-500 rounded-2xl p-4 text-white">
+                        <p className="text-xs font-semibold opacity-80 mb-1 flex items-center gap-1.5">
+                            <Truck size={12} /> Shipment Details
+                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                            <div>
+                                {order.courier_name && (
+                                    <p className="font-bold text-sm">{order.courier_name}</p>
+                                )}
+                                {order.tracking_id && (
+                                    <p className="font-mono text-xs opacity-90 mt-0.5">AWB: {order.tracking_id}</p>
+                                )}
+                            </div>
+                            {order.tracking_id && order.courier_name && (
+                                <a
+                                    href={`https://www.google.com/search?q=${encodeURIComponent(order.courier_name + ' tracking ' + order.tracking_id)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg font-semibold transition-colors shrink-0"
+                                >
+                                    Track →
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Tracking Stepper */}
                 <div className="card bg-white p-5">
                     <h2 className="font-bold text-[#2E2E2E] mb-5">Order Status</h2>
@@ -90,7 +118,6 @@ export default function OrderDetailPage({ params }: Props) {
                             animate={{ height: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
                             transition={{ duration: 1, ease: 'easeOut' }}
                         />
-
                         <div className="space-y-6">
                             {STEPS.map((step, idx) => {
                                 const done = idx <= currentStep
@@ -101,7 +128,7 @@ export default function OrderDetailPage({ params }: Props) {
                                         <motion.div
                                             initial={{ scale: 0.5, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
-                                            transition={{ delay: idx * 0.15 }}
+                                            transition={{ delay: idx * 0.1 }}
                                             className={cn(
                                                 'w-10 h-10 rounded-full flex items-center justify-center z-10 border-2 transition-all',
                                                 done && !active ? 'bg-[#FF6600] border-[#FF6600]' : '',
@@ -158,7 +185,7 @@ export default function OrderDetailPage({ params }: Props) {
                     <div>
                         <p className="text-xs text-[#767676]">Payment Method</p>
                         <p className="text-sm font-semibold text-[#2E2E2E] capitalize">
-                            {order.payment_method === 'cod' ? '💵 Cash on Delivery' : '📱 UPI'}
+                            {order.payment_method === 'cod' ? '💵 Cash on Delivery' : '📱 Online Payment'}
                         </p>
                     </div>
                 </div>

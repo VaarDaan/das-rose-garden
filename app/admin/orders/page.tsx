@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { Order } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
 import { MessageCircle, ChevronDown, ChevronUp, Truck } from 'lucide-react'
 
@@ -25,24 +23,26 @@ const STATUS_COLORS: Record<string, string> = {
 export default function AdminOrdersPage() {
     const [orders, setOrders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
     const [updatingId, setUpdatingId] = useState<string | null>(null)
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [trackingInputs, setTrackingInputs] = useState<Record<string, { tracking_id: string; courier_name: string }>>({})
-    const supabase = createClient()
 
     const fetchOrders = async () => {
-        const { data } = await supabase
-            .from('orders')
-            .select('*, profiles(full_name, phone)')
-            .order('created_at', { ascending: false })
+        setLoading(true)
+        setError('')
+        const res = await fetch('/api/admin/orders')
+        if (!res.ok) {
+            const err = await res.json()
+            setError(err.error || 'Failed to load orders')
+            setLoading(false)
+            return
+        }
+        const data = await res.json()
         setOrders(data || [])
-        // Init tracking inputs
         const inputs: typeof trackingInputs = {}
             ; (data || []).forEach((o: any) => {
-                inputs[o.id] = {
-                    tracking_id: o.tracking_id || '',
-                    courier_name: o.courier_name || '',
-                }
+                inputs[o.id] = { tracking_id: o.tracking_id || '', courier_name: o.courier_name || '' }
             })
         setTrackingInputs(inputs)
         setLoading(false)
@@ -50,17 +50,13 @@ export default function AdminOrdersPage() {
 
     useEffect(() => { fetchOrders() }, [])
 
-    const updateStatus = async (id: string, status: string) => {
+    const patchOrder = async (id: string, updates: Record<string, any>) => {
         setUpdatingId(id)
-        await supabase.from('orders').update({ status }).eq('id', id)
-        await fetchOrders()
-        setUpdatingId(null)
-    }
-
-    const saveTracking = async (id: string) => {
-        setUpdatingId(id)
-        const { tracking_id, courier_name } = trackingInputs[id] || {}
-        await supabase.from('orders').update({ tracking_id: tracking_id || null, courier_name: courier_name || null }).eq('id', id)
+        await fetch('/api/admin/orders', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...updates }),
+        })
         await fetchOrders()
         setUpdatingId(null)
     }
@@ -77,6 +73,15 @@ export default function AdminOrdersPage() {
                 <h1 className="text-2xl font-bold text-[#2E2E2E]">Orders</h1>
                 <p className="text-sm text-[#767676]">{orders.length} total orders</p>
             </div>
+
+            {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                    ⚠️ {error}
+                    {error.includes('Service role key') && (
+                        <p className="mt-1 text-xs">Add <code className="bg-red-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> to your .env.local and Vercel environment variables.</p>
+                    )}
+                </div>
+            )}
 
             <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden">
                 {loading ? (
@@ -123,7 +128,7 @@ export default function AdminOrdersPage() {
                                                 <td className="px-3 py-3">
                                                     <select
                                                         value={order.status}
-                                                        onChange={(e) => updateStatus(order.id, e.target.value)}
+                                                        onChange={(e) => patchOrder(order.id, { status: e.target.value })}
                                                         disabled={updatingId === order.id}
                                                         className={`text-xs font-semibold rounded-lg px-2 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FF6600] ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}
                                                     >
@@ -135,26 +140,18 @@ export default function AdminOrdersPage() {
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center gap-2">
                                                         {(order.profiles?.phone || order.address?.phone) && (
-                                                            <button
-                                                                onClick={() => openWhatsApp(order.profiles?.phone || order.address?.phone)}
-                                                                className="p-2 rounded-lg bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
-                                                                title="WhatsApp"
-                                                            >
+                                                            <button onClick={() => openWhatsApp(order.profiles?.phone || order.address?.phone)}
+                                                                className="p-2 rounded-lg bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors" title="WhatsApp">
                                                                 <MessageCircle size={14} />
                                                             </button>
                                                         )}
-                                                        <button
-                                                            onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                                                            className="p-2 rounded-lg bg-orange-50 text-[#FF6600] hover:bg-orange-100 transition-colors"
-                                                            title="Tracking info"
-                                                        >
+                                                        <button onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                                                            className="p-2 rounded-lg bg-orange-50 text-[#FF6600] hover:bg-orange-100 transition-colors" title="Tracking info">
                                                             {isExpanded ? <ChevronUp size={14} /> : <Truck size={14} />}
                                                         </button>
                                                     </div>
                                                 </td>
                                             </tr>
-
-                                            {/* ── Expanded tracking row ── */}
                                             {isExpanded && (
                                                 <tr key={`${order.id}-expand`} className="bg-orange-50/60">
                                                     <td colSpan={7} className="px-6 py-4">
@@ -164,33 +161,31 @@ export default function AdminOrdersPage() {
                                                         <div className="flex flex-wrap items-end gap-3">
                                                             <div>
                                                                 <label className="text-[10px] font-semibold text-[#767676] uppercase tracking-wide">Courier Name</label>
-                                                                <input
-                                                                    value={tracking.courier_name}
+                                                                <input value={tracking.courier_name}
                                                                     onChange={e => setTrackingInputs(t => ({ ...t, [order.id]: { ...t[order.id], courier_name: e.target.value } }))}
                                                                     placeholder="e.g. Delhivery, BlueDart"
-                                                                    className="mt-1 block bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF6600] w-56"
-                                                                />
+                                                                    className="mt-1 block bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF6600] w-56" />
                                                             </div>
                                                             <div>
                                                                 <label className="text-[10px] font-semibold text-[#767676] uppercase tracking-wide">Tracking ID / AWB</label>
-                                                                <input
-                                                                    value={tracking.tracking_id}
+                                                                <input value={tracking.tracking_id}
                                                                     onChange={e => setTrackingInputs(t => ({ ...t, [order.id]: { ...t[order.id], tracking_id: e.target.value } }))}
                                                                     placeholder="e.g. 1234567890"
-                                                                    className="mt-1 block bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF6600] w-56"
-                                                                />
+                                                                    className="mt-1 block bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF6600] w-56" />
                                                             </div>
                                                             <button
-                                                                onClick={() => saveTracking(order.id)}
+                                                                onClick={() => patchOrder(order.id, {
+                                                                    tracking_id: tracking.tracking_id || null,
+                                                                    courier_name: tracking.courier_name || null,
+                                                                })}
                                                                 disabled={updatingId === order.id}
-                                                                className="px-4 py-2 bg-[#FF6600] text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-60"
-                                                            >
+                                                                className="px-4 py-2 bg-[#FF6600] text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-60">
                                                                 {updatingId === order.id ? 'Saving…' : 'Save Tracking'}
                                                             </button>
                                                         </div>
                                                         {(order.tracking_id || order.courier_name) && (
                                                             <p className="text-xs text-[#767676] mt-2">
-                                                                Current: <span className="font-semibold text-[#2E2E2E]">{order.courier_name || '—'}</span> · AWB: <span className="font-mono font-semibold text-[#2E2E2E]">{order.tracking_id || '—'}</span>
+                                                                Saved: <span className="font-semibold text-[#2E2E2E]">{order.courier_name || '—'}</span> · <span className="font-mono font-semibold text-[#2E2E2E]">{order.tracking_id || '—'}</span>
                                                             </p>
                                                         )}
                                                     </td>

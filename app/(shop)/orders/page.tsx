@@ -8,17 +8,23 @@ import Link from 'next/link'
 import { Flower2, ChevronRight, Package } from 'lucide-react'
 
 const STATUS_LABELS: Record<string, string> = {
+    received: 'Order Received',
     confirmed: 'Confirmed',
-    processed: 'Processing',
-    shipped: 'Shipped',
+    packed: 'Packed',
+    dispatched: 'Dispatched',
+    out_for_delivery: 'Out for Delivery',
     delivered: 'Delivered',
+    cancelled: 'Cancelled',
 }
 
 const STATUS_COLORS: Record<string, string> = {
+    received: 'bg-gray-100 text-gray-700',
     confirmed: 'bg-blue-100 text-blue-700',
-    processed: 'bg-yellow-100 text-yellow-700',
-    shipped: 'bg-purple-100 text-purple-700',
+    packed: 'bg-orange-100 text-orange-700',
+    dispatched: 'bg-purple-100 text-purple-700',
+    out_for_delivery: 'bg-yellow-100 text-yellow-700',
     delivered: 'bg-green-100 text-green-700',
+    cancelled: 'bg-red-100 text-red-700',
 }
 
 export default function OrdersPage() {

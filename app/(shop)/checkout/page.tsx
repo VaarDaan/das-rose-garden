@@ -48,7 +48,7 @@ export default function CheckoutPage() {
                 user_id: user.id,
                 items: items,
                 total,
-                status: 'confirmed',
+                status: 'received',
                 payment_method: paymentMode,
                 address: formData,
             })

@@ -1,7 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 
 export default async function AdminDashboard() {
-    const supabase = await createClient()
+    // Use service role key to bypass RLS — admin dashboard must always see all data
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { cookies: { getAll: () => [], setAll: () => { } } }
+    )
 
     const [
         { count: productCount },
@@ -22,10 +27,13 @@ export default async function AdminDashboard() {
     ]
 
     const STATUS_COLORS: Record<string, string> = {
+        received: 'bg-gray-100 text-gray-700',
         confirmed: 'bg-blue-100 text-blue-700',
-        processed: 'bg-yellow-100 text-yellow-700',
-        shipped: 'bg-purple-100 text-purple-700',
+        packed: 'bg-orange-100 text-orange-700',
+        dispatched: 'bg-purple-100 text-purple-700',
+        out_for_delivery: 'bg-yellow-100 text-yellow-700',
         delivered: 'bg-green-100 text-green-700',
+        cancelled: 'bg-red-100 text-red-700',
     }
 
     return (

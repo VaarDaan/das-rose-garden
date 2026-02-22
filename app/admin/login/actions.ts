@@ -87,19 +87,29 @@ export async function adminLogin(
         }
     }
 
-    // ─── Credential verification ───────────────────────────────────────────────
-    const adminEmail = process.env.ADMIN_EMAIL ?? ''
-    const adminHash = process.env.ADMIN_PASSWORD_HASH ?? ''
+    // ─── Credential verification (supports multiple admins) ────────────────────
+    const admins = [
+        { email: (process.env.ADMIN_EMAIL ?? '').toLowerCase(), hash: process.env.ADMIN_PASSWORD_HASH ?? '' },
+        { email: (process.env.ADMIN_EMAIL_2 ?? '').toLowerCase(), hash: process.env.ADMIN_PASSWORD_HASH_2 ?? '' },
+    ].filter(a => a.email && a.hash)
 
-    // Validate email first (constant-time ish via bcrypt always running)
-    const emailMatch = email === adminEmail.toLowerCase()
+    let authenticated = false
+    for (const admin of admins) {
+        if (email === admin.email) {
+            const passwordMatch = await bcrypt.compare(password, admin.hash)
+            if (passwordMatch) {
+                authenticated = true
+                break
+            }
+        }
+    }
 
-    // Always run bcrypt to prevent timing-based email enumeration
-    const passwordMatch = adminHash
-        ? await bcrypt.compare(password, adminHash)
-        : false
+    // Always run bcrypt even if no email matched to prevent timing-based enumeration
+    if (!authenticated && !admins.some(a => a.email === email)) {
+        await bcrypt.hash(password, 10) // constant-time dummy
+    }
 
-    if (!emailMatch || !passwordMatch) {
+    if (!authenticated) {
         // Increment attempt counter
         const newAttempts = entry.attempts + 1
         const lockedUntil = newAttempts >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : null
@@ -123,12 +133,14 @@ export async function adminLogin(
     const token = await createSessionToken()
 
     const cookieStore = await cookies()
+    // Delete any old cookie at the old /admin path
+    cookieStore.delete({ name: SESSION_COOKIE, path: '/admin' })
     cookieStore.set(SESSION_COOKIE, token, {
         httpOnly: true,      // Not accessible via JavaScript
         secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
         sameSite: 'lax',     // CSRF protection
         maxAge: SESSION_MAX_AGE,
-        path: '/admin',
+        path: '/',           // Must be '/' so browser sends cookie to /api/admin/* too
     })
 
     redirect('/admin')
@@ -137,7 +149,9 @@ export async function adminLogin(
 // ─── Logout action ─────────────────────────────────────────────────────────────
 export async function adminLogout(): Promise<void> {
     const cookieStore = await cookies()
-    cookieStore.delete(SESSION_COOKIE)
+    // Delete at both paths to ensure cleanup
+    cookieStore.delete({ name: SESSION_COOKIE, path: '/' })
+    cookieStore.delete({ name: SESSION_COOKIE, path: '/admin' })
     redirect('/admin/login')
 }
 

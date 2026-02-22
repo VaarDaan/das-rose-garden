@@ -14,14 +14,15 @@ interface Props {
 }
 
 const STEPS = [
-    { key: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, desc: 'Your order has been received' },
+    { key: 'received', label: 'Order Received', icon: Clock, desc: 'Your order has been received' },
+    { key: 'confirmed', label: 'Confirmed', icon: CheckCircle, desc: 'Your order has been confirmed' },
     { key: 'packed', label: 'Packed', icon: Box, desc: 'Your flowers are being packed' },
     { key: 'dispatched', label: 'Dispatched', icon: Truck, desc: 'Handed over to courier service' },
     { key: 'out_for_delivery', label: 'Out for Delivery', icon: MapPin, desc: 'Your order is nearby!' },
     { key: 'delivered', label: 'Delivered', icon: CheckCircle, desc: 'Order delivered successfully' },
 ]
 
-const STATUS_ORDER = ['confirmed', 'packed', 'dispatched', 'out_for_delivery', 'delivered']
+const STATUS_ORDER = ['received', 'confirmed', 'packed', 'dispatched', 'out_for_delivery', 'delivered']
 
 export default function OrderDetailPage({ params }: Props) {
     const [order, setOrder] = useState<Order | null>(null)

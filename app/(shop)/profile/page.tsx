@@ -14,19 +14,23 @@ import { formatPrice } from '@/lib/utils'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const STATUS_LABELS: Record<string, string> = {
+    received: 'Order Received',
     confirmed: 'Confirmed',
     packed: 'Packed',
     dispatched: 'Dispatched',
     out_for_delivery: 'Out for Delivery',
     delivered: 'Delivered',
+    cancelled: 'Cancelled',
 }
 
 const STATUS_COLORS: Record<string, string> = {
+    received: 'bg-gray-100 text-gray-700',
     confirmed: 'bg-blue-100 text-blue-700',
     packed: 'bg-orange-100 text-orange-700',
     dispatched: 'bg-purple-100 text-purple-700',
     out_for_delivery: 'bg-yellow-100 text-yellow-700',
     delivered: 'bg-green-100 text-green-700',
+    cancelled: 'bg-red-100 text-red-700',
 }
 
 const EMPTY_ADDRESS: ShippingAddress = { full_name: '', phone: '', pincode: '', address: '', city: '', state: '' }
@@ -79,8 +83,8 @@ export default function ProfilePage() {
             setEditAddress(pData?.address ?? EMPTY_ADDRESS)
 
             const orders = (oData as Order[]) || []
-            setActiveOrders(orders.filter(o => o.status !== 'delivered'))
-            setRecentOrders(orders.filter(o => o.status === 'delivered').slice(0, 3))
+            setActiveOrders(orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled'))
+            setRecentOrders(orders.filter(o => o.status === 'delivered' || o.status === 'cancelled').slice(0, 3))
 
             setLoading(false)
         }

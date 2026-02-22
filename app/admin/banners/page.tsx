@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { HeroBanner } from '@/lib/types'
-import { Plus, Trash2, GripVertical, ExternalLink, Eye, EyeOff } from 'lucide-react'
+import { Plus, Trash2, GripVertical, ExternalLink, Eye, EyeOff, Upload, Loader2, Image as ImageIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminBannersPage() {
@@ -11,6 +11,9 @@ export default function AdminBannersPage() {
     const [loading, setLoading] = useState(true)
     const [form, setForm] = useState({ image_url: '', link: '' })
     const [saving, setSaving] = useState(false)
+    const [uploading, setUploading] = useState(false)
+    const [dragOver, setDragOver] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const supabase = createClient()
 
     const fetchBanners = async () => {
@@ -23,6 +26,40 @@ export default function AdminBannersPage() {
     }
 
     useEffect(() => { fetchBanners() }, [])
+
+    const uploadFile = async (file: File) => {
+        setUploading(true)
+        const formData = new FormData()
+        formData.append('file', file)
+        try {
+            const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+            const data = await res.json()
+            if (!res.ok) {
+                alert(data.error || 'Upload failed')
+                setUploading(false)
+                return
+            }
+            setForm(prev => ({ ...prev, image_url: data.url }))
+        } catch {
+            alert('Upload failed — check your connection')
+        }
+        setUploading(false)
+    }
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            uploadFile(e.target.files[0])
+            e.target.value = ''
+        }
+    }
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        setDragOver(false)
+        if (e.dataTransfer.files[0]) {
+            uploadFile(e.dataTransfer.files[0])
+        }
+    }
 
     const handleAdd = async () => {
         if (!form.image_url.trim()) return
@@ -57,35 +94,69 @@ export default function AdminBannersPage() {
             {/* Add form */}
             <div className="bg-white rounded-2xl border border-[#E8E8E8] p-5 mb-6">
                 <h2 className="font-bold text-[#2E2E2E] mb-4">Add New Banner</h2>
-                <div className="grid grid-cols-1 gap-3 mb-4">
-                    <div>
-                        <label className="block text-xs font-semibold text-[#767676] mb-1">Image URL *</label>
-                        <input
-                            type="url"
-                            value={form.image_url}
-                            onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
-                            className="input-field"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-[#767676] mb-1">Link (optional)</label>
-                        <input
-                            type="url"
-                            value={form.link}
-                            onChange={(e) => setForm({ ...form, link: e.target.value })}
-                            placeholder="/categories or https://..."
-                            className="input-field"
-                        />
-                    </div>
-                </div>
 
-                {/* Preview */}
-                {form.image_url && (
-                    <div className="mb-4 rounded-xl overflow-hidden h-32">
-                        <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                {/* Upload zone */}
+                {!form.image_url ? (
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 mb-4 ${dragOver
+                            ? 'border-[#FF6600] bg-orange-50/50'
+                            : 'border-[#E0E0E0] hover:border-[#FF6600]/50 hover:bg-[#FAFAFA]'
+                            }`}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                        {uploading ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <Loader2 size={28} className="text-[#FF6600] animate-spin" />
+                                <p className="text-sm font-medium text-[#FF6600]">Uploading…</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
+                                    <Upload size={22} className="text-[#FF6600]" />
+                                </div>
+                                <p className="text-sm font-medium text-[#2E2E2E]">
+                                    Click to upload or drag & drop
+                                </p>
+                                <p className="text-xs text-[#999]">JPEG, PNG, WebP, GIF · Max 5MB</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="mb-4">
+                        <div className="rounded-xl overflow-hidden h-36 relative group">
+                            <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" />
+                            <button
+                                onClick={() => setForm({ ...form, image_url: '' })}
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                                title="Remove image"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-[#999] mt-1.5 truncate">{form.image_url}</p>
                     </div>
                 )}
+
+                <div className="mb-4">
+                    <label className="block text-xs font-semibold text-[#767676] mb-1">Link (optional)</label>
+                    <input
+                        type="url"
+                        value={form.link}
+                        onChange={(e) => setForm({ ...form, link: e.target.value })}
+                        placeholder="/categories or https://..."
+                        className="input-field"
+                    />
+                </div>
 
                 <button onClick={handleAdd} disabled={saving || !form.image_url} className="btn-primary flex items-center gap-2">
                     <Plus size={16} /> {saving ? 'Adding…' : 'Add Banner'}

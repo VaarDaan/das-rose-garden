@@ -1,0 +1,13 @@
+{
+    "name": "drg-sheets-sync",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "sync": "node sync-to-sheets.mjs"
+    },
+    "dependencies": {
+        "@supabase/supabase-js": "^2.97.0",
+        "googleapis": "^144.0.0"
+    }
+}

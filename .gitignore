@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# google service account key — NEVER commit
+**/service-account*.json
+
+# scripts dependencies
+scripts/node_modules
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

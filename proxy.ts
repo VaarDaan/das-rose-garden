@@ -1,5 +1,26 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+// ─── Security headers ─────────────────────────────────────────────────────────
+function applySecurityHeaders(response: NextResponse): NextResponse {
+    response.headers.set(
+        'Content-Security-Policy',
+        [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "img-src 'self' data: blob: https://*.supabase.co",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+            "frame-ancestors 'none'",
+        ].join('; ')
+    )
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'geolocation=(), camera=(), microphone=()')
+    return response
+}
+
 // ─── Admin session cookie helpers ─────────────────────────────────────────────
 const SESSION_COOKIE = 'drg_admin_session'
 
@@ -54,17 +75,17 @@ export async function proxy(request: NextRequest) {
             if (!token || !(await verifyAdminSession(token))) {
                 const loginUrl = new URL('/admin/login', request.url)
                 loginUrl.searchParams.set('next', pathname)
-                return NextResponse.redirect(loginUrl)
+                return applySecurityHeaders(NextResponse.redirect(loginUrl))
             }
         } else {
             // Already logged in? Redirect to /admin
             const token = request.cookies.get(SESSION_COOKIE)?.value
             if (token && (await verifyAdminSession(token))) {
-                return NextResponse.redirect(new URL('/admin', request.url))
+                return applySecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)))
             }
         }
         // Admin routes don't need Supabase session refresh — return here
-        return NextResponse.next()
+        return applySecurityHeaders(NextResponse.next())
     }
 
     // ── Supabase session refresh for all other routes ───────────────────────
@@ -72,7 +93,7 @@ export async function proxy(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || supabaseUrl === 'YOUR_SUPABASE_PROJECT_URL' || !supabaseAnonKey) {
-        return NextResponse.next()
+        return applySecurityHeaders(NextResponse.next())
     }
 
     try {
@@ -97,12 +118,12 @@ export async function proxy(request: NextRequest) {
         const protectedPaths = ['/cart', '/checkout', '/orders']
         if (protectedPaths.some((p) => pathname.startsWith(p))) {
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return NextResponse.redirect(new URL('/login', request.url))
+            if (!user) return applySecurityHeaders(NextResponse.redirect(new URL('/login', request.url)))
         }
 
-        return supabaseResponse
+        return applySecurityHeaders(supabaseResponse)
     } catch {
-        return NextResponse.next()
+        return applySecurityHeaders(NextResponse.next())
     }
 }
 

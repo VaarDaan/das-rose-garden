@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { Image, LayoutGrid, Package, ShoppingBag, Users, BarChart3, Flower2, LogOut } from 'lucide-react'
+import { Image, LayoutGrid, Package, ShoppingBag, Users, BarChart3, Flower2, LogOut, AlertTriangle } from 'lucide-react'
 import { adminLogout } from '@/app/admin/login/actions'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV = [
     { href: '/admin', label: 'Dashboard', icon: BarChart3 },
@@ -15,8 +17,37 @@ const NAV = [
     { href: '/admin/users', label: 'Users', icon: Users },
 ]
 
+interface LowStockProduct {
+    id: string
+    name: string
+    stock: number
+}
+
 export default function AdminSidebar() {
     const pathname = usePathname()
+    const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([])
+    const [showLowStock, setShowLowStock] = useState(false)
+
+    useEffect(() => {
+        const fetchLowStock = async () => {
+            try {
+                const supabase = createClient()
+                const { data } = await supabase
+                    .from('products')
+                    .select('id, name, stock')
+                    .lt('stock', 5)
+                    .order('stock', { ascending: true })
+                setLowStockProducts((data || []) as LowStockProduct[])
+            } catch (err) {
+                console.error('[AdminSidebar] Failed to fetch low stock:', err)
+            }
+        }
+        fetchLowStock()
+        // Re-check every 60 seconds
+        const interval = setInterval(fetchLowStock, 60_000)
+        return () => clearInterval(interval)
+    }, [])
+
     return (
         <aside className="w-56 shrink-0 bg-[#1A1A2E] min-h-screen flex flex-col">
             {/* Logo */}
@@ -51,6 +82,41 @@ export default function AdminSidebar() {
                         </Link>
                     )
                 })}
+
+                {/* Low Stock Alert */}
+                {lowStockProducts.length > 0 && (
+                    <div className="mt-3 mx-3">
+                        <button
+                            onClick={() => setShowLowStock(!showLowStock)}
+                            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-all text-xs font-semibold"
+                        >
+                            <AlertTriangle size={14} />
+                            <span>Low Stock</span>
+                            <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center font-bold">
+                                {lowStockProducts.length}
+                            </span>
+                        </button>
+                        {showLowStock && (
+                            <div className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
+                                {lowStockProducts.map((p) => (
+                                    <Link
+                                        key={p.id}
+                                        href={`/admin/products/${p.id}`}
+                                        className="flex items-center justify-between px-2 py-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                                    >
+                                        <span className="text-[11px] truncate max-w-[120px]">{p.name}</span>
+                                        <span className={cn(
+                                            'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                                            p.stock === 0 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                                        )}>
+                                            {p.stock === 0 ? 'OOS' : `${p.stock} left`}
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </nav>
 
             <div className="px-5 py-4 border-t border-white/10 flex flex-col gap-3">

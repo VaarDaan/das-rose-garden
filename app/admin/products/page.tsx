@@ -57,6 +57,7 @@ export default function AdminProductsPage() {
                         <thead className="bg-[#F5F5F5]">
                             <tr>
                                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#767676]">Product</th>
+                                <th className="text-left px-3 py-3 text-xs font-semibold text-[#767676]">Code</th>
                                 <th className="text-left px-3 py-3 text-xs font-semibold text-[#767676]">Type</th>
                                 <th className="text-right px-3 py-3 text-xs font-semibold text-[#767676]">Price</th>
                                 <th className="text-right px-3 py-3 text-xs font-semibold text-[#767676]">Stock</th>
@@ -78,6 +79,7 @@ export default function AdminProductsPage() {
                                             <p className="font-medium text-[#2E2E2E] line-clamp-1">{p.name}</p>
                                         </div>
                                     </td>
+                                    <td className="px-3 py-3 font-mono text-xs text-[#767676]">{p.product_code || '—'}</td>
                                     <td className="px-3 py-3 text-[#767676]">{p.type || '—'}</td>
                                     <td className="px-3 py-3 text-right font-bold text-[#FF6600]">{formatPrice(p.price)}</td>
                                     <td className="px-3 py-3 text-right">

@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, X, Upload, Loader2, Image as ImageIcon } from 'lucide-
 import Link from 'next/link'
 
 interface ProductForm {
+    product_code: string
     name: string
     description: string
     price: string
@@ -20,7 +21,7 @@ interface ProductForm {
 }
 
 const EMPTY_FORM: ProductForm = {
-    name: '', description: '', price: '', type: '', flower_color: '',
+    product_code: '', name: '', description: '', price: '', type: '', flower_color: '',
     bloom_season: '', stock: '0', images: [], size: [], specs: '{}'
 }
 
@@ -43,6 +44,7 @@ export default function AdminProductFormPage() {
             supabase.from('products').select('*').eq('id', params.id).single().then(({ data }) => {
                 if (data) {
                     setForm({
+                        product_code: data.product_code || '',
                         name: data.name || '',
                         description: data.description || '',
                         price: String(data.price || ''),
@@ -65,6 +67,7 @@ export default function AdminProductFormPage() {
         try { specs = JSON.parse(form.specs) } catch { setError('Invalid JSON in Specs field'); return }
         setSaving(true)
         const payload = {
+            product_code: form.product_code.trim() || null,
             name: form.name,
             description: form.description || null,
             price: parseFloat(form.price),
@@ -143,6 +146,10 @@ export default function AdminProductFormPage() {
                 <div className="bg-white rounded-2xl border border-[#E8E8E8] p-5">
                     <h2 className="font-bold text-[#2E2E2E] mb-4">Basic Info</h2>
                     <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-[#767676] mb-1">Product Code</label>
+                            <input value={form.product_code} onChange={(e) => setForm({ ...form, product_code: e.target.value })} placeholder="DRG-ROSE-001" className="input-field font-mono" />
+                        </div>
                         <div>
                             <label className="block text-xs font-semibold text-[#767676] mb-1">Product Name *</label>
                             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Red Rose Bouquet" className="input-field" />

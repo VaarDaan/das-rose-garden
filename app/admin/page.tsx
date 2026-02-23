@@ -1,10 +1,36 @@
 import { createServerClient } from '@supabase/ssr'
+import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
+
+export const revalidate = 30 // ISR: auto-refresh every 30 seconds
 
 export default async function AdminDashboard() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    // Safeguard: if env vars are missing, show a helpful message instead of crashing
+    if (!supabaseUrl || !serviceRoleKey) {
+        return (
+            <div className="p-6">
+                <h1 className="text-2xl font-bold text-[#2E2E2E] mb-1">Dashboard</h1>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mt-4">
+                    <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Configuration Error</p>
+                    <p className="text-sm text-red-600">
+                        {!supabaseUrl && <span className="block">• <code>NEXT_PUBLIC_SUPABASE_URL</code> is not set.</span>}
+                        {!serviceRoleKey && <span className="block">• <code>SUPABASE_SERVICE_ROLE_KEY</code> is not set.</span>}
+                    </p>
+                    <p className="text-xs text-red-500 mt-2">
+                        Add these to your Vercel Environment Variables and redeploy.
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
     // Use service role key to bypass RLS — admin dashboard must always see all data
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        supabaseUrl,
+        serviceRoleKey,
         { cookies: { getAll: () => [], setAll: () => { } } }
     )
 
@@ -13,11 +39,13 @@ export default async function AdminDashboard() {
         { count: orderCount },
         { count: userCount },
         { data: recentOrders },
+        { data: lowStockProducts },
     ] = await Promise.all([
         supabase.from('products').select('*', { count: 'exact', head: true }),
         supabase.from('orders').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('products').select('id, name, stock').lt('stock', 5).order('stock', { ascending: true }),
     ])
 
     const stats = [
@@ -52,6 +80,33 @@ export default async function AdminDashboard() {
                 ))}
             </div>
 
+            {/* Low Stock Alerts */}
+            {(lowStockProducts && lowStockProducts.length > 0) && (
+                <div className="bg-red-50 rounded-2xl border border-red-200 p-5 mb-8">
+                    <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle size={16} className="text-red-500" />
+                        <h2 className="font-bold text-red-700 text-sm">Low Stock Alerts</h2>
+                        <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 ml-1">
+                            {lowStockProducts.length}
+                        </span>
+                    </div>
+                    <div className="space-y-1.5">
+                        {lowStockProducts.map((p: any) => (
+                            <Link
+                                key={p.id}
+                                href={`/admin/products/${p.id}`}
+                                className="flex items-center justify-between bg-white rounded-lg px-3 py-2 hover:bg-red-100/50 transition-colors"
+                            >
+                                <span className="text-sm font-medium text-[#2E2E2E] truncate max-w-[200px]">{p.name}</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.stock === 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                                    {p.stock === 0 ? 'Out of Stock' : `${p.stock} left`}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Recent orders */}
             <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden">
                 <div className="px-5 py-4 border-b border-[#E8E8E8]">
@@ -70,7 +125,7 @@ export default async function AdminDashboard() {
                         {(recentOrders || []).map((order: any) => (
                             <tr key={order.id} className="hover:bg-[#FAFAFA]">
                                 <td className="px-5 py-3 font-mono text-xs text-[#2E2E2E]">
-                                    #{order.id.slice(0, 8).toUpperCase()}
+                                    #{`DRG${String(order.order_number).padStart(5, '0')}`}
                                 </td>
                                 <td className="px-3 py-3 text-[#767676] text-xs">
                                     {new Date(order.created_at).toLocaleDateString('en-IN')}

@@ -95,7 +95,7 @@ export default function OrdersPage() {
 
                         <div className="flex-1 min-w-0">
                             <p className="text-xs text-[#767676] mb-1">
-                                #{order.id.slice(0, 8).toUpperCase()} · {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                #DRG{String(order.order_number).padStart(5, '0')} · {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                             <p className="text-sm font-semibold text-[#2E2E2E] line-clamp-1">
                                 {order.items.map((i) => i.name).join(', ')}

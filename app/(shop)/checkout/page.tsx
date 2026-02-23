@@ -41,25 +41,27 @@ export default function CheckoutPage() {
     const total = totalPrice() + shipping
 
     const saveOrderAndShip = async (user: any, formData: FormData, paymentMode: 'online' | 'cod', rzpResponse: any | null = null) => {
-        // 1. Save strictly to DB
-        const { data: order, error } = await supabase
-            .from('orders')
-            .insert({
-                user_id: user.id,
-                items: items,
+        // 1. Call server-side API for atomic stock decrement + order creation
+        const res = await fetch('/api/orders/place', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items,
                 total,
-                status: 'received',
                 payment_method: paymentMode,
                 address: formData,
-            })
-            .select()
-            .single()
+            }),
+        })
 
-        if (error || !order) {
-            alert('Failed to save order to database')
+        const data = await res.json()
+
+        if (!res.ok || !data?.id) {
+            alert(data?.error || 'Failed to place order. Please try again.')
             setPlacing(false)
             return
         }
+
+        const order = data
 
         // 2. Call mock shipping integration
         try {

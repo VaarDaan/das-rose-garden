@@ -240,7 +240,7 @@ export default function ProfilePage() {
                                             : <Flower2 size={18} className="text-[#FF6600] opacity-40" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs text-[#767676]">#{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="text-xs text-[#767676]">#DRG{String(order.order_number).padStart(5, '0')}</p>
                                         <p className="text-sm font-semibold text-[#2E2E2E] truncate">{order.items.map(i => i.name).join(', ')}</p>
                                         {order.courier_name && order.tracking_id && (
                                             <p className="text-[10px] text-[#767676] truncate">{order.courier_name} · {order.tracking_id}</p>
@@ -285,7 +285,7 @@ export default function ProfilePage() {
                                             : <Flower2 size={18} className="text-[#FF6600] opacity-40" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs text-[#767676]">#{order.id.slice(0, 8).toUpperCase()} · {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                                        <p className="text-xs text-[#767676]">#DRG{String(order.order_number).padStart(5, '0')} · {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
                                         <p className="text-sm font-semibold text-[#2E2E2E] truncate">{order.items.map(i => i.name).join(', ')}</p>
                                     </div>
                                     <span className="text-sm font-bold text-[#FF6600] shrink-0">{formatPrice(order.total)}</span>

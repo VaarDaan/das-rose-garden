@@ -68,7 +68,7 @@ export default function OrderDetailPage({ params }: Props) {
                     <ArrowLeft size={20} className="text-[#2E2E2E]" />
                 </Link>
                 <div>
-                    <h1 className="text-base font-bold text-[#2E2E2E]">Order #{order.id.slice(0, 8).toUpperCase()}</h1>
+                    <h1 className="text-base font-bold text-[#2E2E2E]">Order #DRG{String(order.order_number).padStart(5, '0')}</h1>
                     <p className="text-xs text-[#767676]">
                         Placed {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>

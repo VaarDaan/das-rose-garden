@@ -168,7 +168,7 @@ export default function AdminOrdersPage() {
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="flex items-center gap-3 flex-wrap">
                                             <span className="font-mono text-sm font-bold text-[#2E2E2E]">
-                                                #{order.id.slice(0, 8).toUpperCase()}
+                                                #DRG{String(order.order_number).padStart(5, '0')}
                                             </span>
                                             <span className="text-xs text-[#999] flex items-center gap-1">
                                                 <Calendar size={12} />

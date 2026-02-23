@@ -3,9 +3,12 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { createHmac } from 'crypto'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-// Service role key bypasses all RLS — never expose this to the browser
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+function getEnvVars() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return null
+    return { url, key }
+}
 
 async function verifyAdminSession(cookieStore: ReturnType<typeof cookies> extends Promise<infer T> ? T : never) {
     const token = cookieStore.get('drg_admin_session')?.value
@@ -33,12 +36,13 @@ export async function GET() {
     const isAdmin = await verifyAdminSession(cookieStore)
     if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-        return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 })
+    const env = getEnvVars()
+    if (!env) {
+        return NextResponse.json({ error: 'Service role key not configured. Add SUPABASE_SERVICE_ROLE_KEY to your environment variables.' }, { status: 500 })
     }
 
     // Service role client bypasses RLS entirely
-    const supabase = createServerClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    const supabase = createServerClient(env.url, env.key, {
         cookies: { getAll: () => [], setAll: () => { } },
     })
 
@@ -56,11 +60,12 @@ export async function PATCH(req: Request) {
     const isAdmin = await verifyAdminSession(cookieStore)
     if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-        return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 })
+    const env = getEnvVars()
+    if (!env) {
+        return NextResponse.json({ error: 'Service role key not configured. Add SUPABASE_SERVICE_ROLE_KEY to your environment variables.' }, { status: 500 })
     }
 
-    const supabase = createServerClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    const supabase = createServerClient(env.url, env.key, {
         cookies: { getAll: () => [], setAll: () => { } },
     })
 

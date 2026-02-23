@@ -11,6 +11,7 @@ export interface Profile {
 
 export interface Product {
     id: string
+    product_code: string | null
     name: string
     description: string | null
     price: number
@@ -36,6 +37,7 @@ export interface CartItem {
 
 export interface Order {
     id: string
+    order_number: number
     user_id: string
     items: CartItemSnapshot[]
     total: number

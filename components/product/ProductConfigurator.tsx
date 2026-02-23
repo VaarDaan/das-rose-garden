@@ -58,8 +58,10 @@ export default function ProductConfigurator({ product }: Props) {
                 </div>
                 <div className="flex items-baseline gap-3 mt-2">
                     <span className="text-2xl font-bold text-[#FF6600]">{formatPrice(product.price)}</span>
-                    {product.stock > 0 ? (
+                    {product.stock > 10 ? (
                         <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">In Stock</span>
+                    ) : product.stock > 0 ? (
+                        <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Few Left</span>
                     ) : (
                         <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Out of Stock</span>
                     )}
@@ -103,7 +105,7 @@ export default function ProductConfigurator({ product }: Props) {
                             <Plus size={15} />
                         </button>
                     </div>
-                    <p className="text-xs text-[#767676]">{product.stock} available</p>
+                    <p className="text-xs text-[#767676]">{product.stock > 10 ? 'In Stock' : product.stock > 0 ? `Only ${product.stock} left` : 'Out of Stock'}</p>
                 </div>
             </div>
 

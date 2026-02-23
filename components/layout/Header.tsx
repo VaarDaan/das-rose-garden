@@ -21,10 +21,11 @@ export default function Header() {
         if (!q.trim()) { setResults([]); setShowDropdown(false); return }
         setLoading(true)
         const supabase = createClient()
+        const pattern = `%${q.trim()}%`
         const { data } = await supabase
             .from('products')
             .select('id, name, price, images, type')
-            .ilike('name', `%${q}%`)
+            .or(`name.ilike.${pattern},type.ilike.${pattern},flower_color.ilike.${pattern}`)
             .limit(6)
         setResults((data || []) as SearchProduct[])
         setShowDropdown(true)

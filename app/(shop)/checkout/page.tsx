@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,56 +13,17 @@ import Link from 'next/link'
 import { createShipment } from '@/lib/shipping'
 import { cn } from '@/lib/utils'
 
-// ─── Razorpay Key (hardcoded so it NEVER relies on env resolution) ───
 const RAZORPAY_KEY_ID = 'rzp_test_SJsOtIgYyz2NgA'
 
-// ─── Dynamically inject the Razorpay SDK ─────────────────────────────
-function loadRazorpaySDK(): Promise<boolean> {
+const loadRazorpayScript = () => {
     return new Promise((resolve) => {
-        if (typeof window === 'undefined') return resolve(false)
-
-        // Already loaded
-        if ((window as any).Razorpay) {
-            console.log('[Razorpay] SDK already available on window')
-            return resolve(true)
-        }
-
-        // Check if script tag already exists
-        const existing = document.querySelector('script[src*="checkout.razorpay.com"]')
-        if (existing) {
-            console.log('[Razorpay] Script tag exists, waiting…')
-            let attempts = 0
-            const interval = setInterval(() => {
-                attempts++
-                if ((window as any).Razorpay) {
-                    console.log('[Razorpay] SDK became available after waiting')
-                    clearInterval(interval)
-                    resolve(true)
-                } else if (attempts >= 100) {
-                    console.error('[Razorpay] SDK never became available after 10s')
-                    clearInterval(interval)
-                    resolve(false)
-                }
-            }, 100)
-            return
-        }
-
-        // Create and inject a new script tag
-        console.log('[Razorpay] Injecting script tag…')
-        const script = document.createElement('script')
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-        script.async = true
-        script.onload = () => {
-            console.log('[Razorpay] ✅ Script loaded successfully')
-            resolve(true)
-        }
-        script.onerror = (err) => {
-            console.error('[Razorpay] ❌ Script FAILED to load:', err)
-            resolve(false)
-        }
-        document.head.appendChild(script)
-    })
-}
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => { resolve(true); };
+        script.onerror = () => { resolve(false); };
+        document.body.appendChild(script);
+    });
+};
 
 const schema = z.object({
     full_name: z.string().min(2, 'Name is required'),
@@ -80,17 +41,8 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('cod')
     const [placing, setPlacing] = useState(false)
     const [showSummary, setShowSummary] = useState(false)
-    const [razorpayReady, setRazorpayReady] = useState(false)
     const router = useRouter()
     const supabase = createClient()
-
-    // Pre-load Razorpay SDK as soon as the checkout page mounts
-    useEffect(() => {
-        loadRazorpaySDK().then((loaded) => {
-            console.log('[Razorpay] Pre-load result:', loaded)
-            setRazorpayReady(loaded)
-        })
-    }, [])
 
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -156,7 +108,17 @@ export default function CheckoutPage() {
 
         if (paymentMethod === 'online') {
             try {
-                // ── Step 1: Create Razorpay order via backend ──
+                // ── Step 1: Load the Razorpay script ──
+                console.log('[Checkout] Loading Razorpay script…')
+                const isLoaded = await loadRazorpayScript();
+                if (!isLoaded) {
+                    alert('Razorpay script failed to inject into the DOM. Check CORS/CSP.');
+                    setPlacing(false);
+                    return;
+                }
+                console.log('[Checkout] ✅ Razorpay script loaded, window.Razorpay:', typeof (window as any).Razorpay)
+
+                // ── Step 2: Create Razorpay order via backend ──
                 console.log('[Checkout] Calling /api/razorpay to create order…')
                 const res = await fetch('/api/razorpay', {
                     method: 'POST',
@@ -175,23 +137,8 @@ export default function CheckoutPage() {
 
                 console.log('[Checkout] ✅ Order created, order_id:', rzpOrder.id)
 
-                // ── Step 2: Ensure Razorpay SDK is loaded ──
-                let sdkReady = razorpayReady
-                if (!sdkReady) {
-                    console.log('[Checkout] SDK not pre-loaded, loading now…')
-                    sdkReady = await loadRazorpaySDK()
-                }
-
-                if (!sdkReady || !(window as any).Razorpay) {
-                    console.error('[Checkout] ❌ Razorpay SDK is not available on window')
-                    alert('Payment gateway could not be loaded. Please check your internet connection, disable any ad-blockers, and try again.')
-                    setPlacing(false)
-                    return
-                }
-
-                console.log('[Checkout] ✅ Razorpay SDK is available, opening modal…')
-
                 // ── Step 3: Initialize Razorpay and open modal ──
+                console.log('[Checkout] Opening Razorpay modal…')
                 const options = {
                     key: RAZORPAY_KEY_ID,
                     amount: rzpOrder.amount,

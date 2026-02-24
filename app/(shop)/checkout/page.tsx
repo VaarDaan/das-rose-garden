@@ -113,18 +113,32 @@ export default function CheckoutPage() {
                     return
                 }
 
-                // 2. Check that Razorpay SDK loaded
-                if (!(window as any).Razorpay) {
-                    console.error('Razorpay SDK not found on window object. Script may have failed to load or is blocked.')
-                    alert('Payment gateway is still loading. Please wait a moment and try again. If the issue persists, check your ad-blocker or internet connection.');
+                // 2. Wait for Razorpay SDK to load (up to 5 seconds)
+                const waitForRazorpay = (): Promise<boolean> =>
+                    new Promise((resolve) => {
+                        if ((window as any).Razorpay) return resolve(true)
+                        let attempts = 0
+                        const interval = setInterval(() => {
+                            attempts++
+                            if ((window as any).Razorpay) {
+                                clearInterval(interval)
+                                resolve(true)
+                            } else if (attempts >= 50) {
+                                clearInterval(interval)
+                                resolve(false)
+                            }
+                        }, 100)
+                    })
+
+                const sdkLoaded = await waitForRazorpay()
+                if (!sdkLoaded) {
+                    console.error('Razorpay SDK failed to load within 5 seconds.')
+                    alert('Payment gateway failed to load. Please disable any ad-blockers and try again.');
                     setPlacing(false);
                     return;
                 }
 
-                const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-                if (!razorpayKey) {
-                    console.error('CRITICAL: NEXT_PUBLIC_RAZORPAY_KEY_ID is missing from environment variables.')
-                }
+                const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_SJsOtIgYyz2NgA';
 
                 const options = {
                     key: razorpayKey,
@@ -186,7 +200,7 @@ export default function CheckoutPage() {
         <div className="min-h-screen bg-[#FDECEF]">
             <Script
                 src="https://checkout.razorpay.com/v1/checkout.js"
-                strategy="lazyOnload"
+                strategy="afterInteractive"
                 onError={(e) => {
                     console.error('Failed to load Razorpay checkout script', e)
                 }}

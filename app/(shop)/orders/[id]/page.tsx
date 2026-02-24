@@ -14,10 +14,10 @@ interface Props {
 }
 
 const STEPS = [
-    { key: 'received', label: 'Order Received', icon: Clock, desc: 'Your order has been received' },
-    { key: 'confirmed', label: 'Confirmed', icon: CheckCircle, desc: 'Your order has been confirmed' },
+    { key: 'received', label: 'Order Placed', icon: Clock, desc: 'Your order has been received' },
+    { key: 'confirmed', label: 'Processing', icon: CheckCircle, desc: 'Your order has been confirmed' },
     { key: 'packed', label: 'Packed', icon: Box, desc: 'Your flowers are being packed' },
-    { key: 'dispatched', label: 'Dispatched', icon: Truck, desc: 'Handed over to courier service' },
+    { key: 'dispatched', label: 'Shipped', icon: Truck, desc: 'Handed over to courier service' },
     { key: 'out_for_delivery', label: 'Out for Delivery', icon: MapPin, desc: 'Your order is nearby!' },
     { key: 'delivered', label: 'Delivered', icon: CheckCircle, desc: 'Order delivered successfully' },
 ]
@@ -51,25 +51,25 @@ export default function OrderDetailPage({ params }: Props) {
 
     if (loading) {
         return <div className="px-4 py-8 space-y-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-20 rounded-xl bg-[#F5F5F5] animate-pulse" />)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-20 rounded-xl bg-[#F9F6EE] animate-pulse" />)}
         </div>
     }
 
     if (!order) {
-        return <div className="flex items-center justify-center min-h-[60vh] text-[#767676]">Order not found</div>
+        return <div className="flex items-center justify-center min-h-[60vh] text-[#595959]">Order not found</div>
     }
 
     const currentStep = STATUS_ORDER.indexOf(order.status)
 
     return (
-        <div className="min-h-screen bg-[#F5F5F5]">
-            <div className="bg-white px-4 py-3 border-b border-[#E8E8E8] flex items-center gap-3">
-                <Link href="/orders" className="p-1 hover:bg-[#F5F5F5] rounded-lg">
-                    <ArrowLeft size={20} className="text-[#2E2E2E]" />
+        <div className="min-h-screen bg-[#FDECEF]">
+            <div className="bg-white/95 backdrop-blur-sm px-4 py-3 border-b border-[#D9D4CA]/60 flex items-center gap-3">
+                <Link href="/orders" className="p-1 hover:bg-[#F9F6EE] rounded-lg">
+                    <ArrowLeft size={20} className="text-[#2C331F]" />
                 </Link>
                 <div>
-                    <h1 className="text-base font-bold text-[#2E2E2E]">Order #DRG{String(order.order_number).padStart(5, '0')}</h1>
-                    <p className="text-xs text-[#767676]">
+                    <h1 className="text-base font-bold text-[#2C331F]" style={{ fontFamily: 'Inter, sans-serif' }}>Order #DRG{String(order.order_number).padStart(5, '0')}</h1>
+                    <p className="text-xs text-[#595959]">
                         Placed {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                 </div>
@@ -79,7 +79,7 @@ export default function OrderDetailPage({ params }: Props) {
 
                 {/* Courier tracking banner */}
                 {(order.courier_name || order.tracking_id) && (
-                    <div className="bg-gradient-to-r from-[#FF6600] to-rose-500 rounded-2xl p-4 text-white">
+                    <div className="bg-gradient-to-r from-[#6B7A41] to-[#8A9C5A] rounded-2xl p-4 text-white">
                         <p className="text-xs font-semibold opacity-80 mb-1 flex items-center gap-1.5">
                             <Truck size={12} /> Shipment Details
                         </p>
@@ -106,15 +106,15 @@ export default function OrderDetailPage({ params }: Props) {
                     </div>
                 )}
 
-                {/* Tracking Stepper */}
-                <div className="card bg-white p-5">
-                    <h2 className="font-bold text-[#2E2E2E] mb-5">Order Status</h2>
+                {/* Tracking Stepper — Timeline Style */}
+                <div className="bg-[#F9F6EE] rounded-xl p-5 border border-[#E8E4D9]/60">
+                    <h2 className="font-bold text-[#2C331F] mb-5">Order Status</h2>
                     <div className="relative">
                         {/* Vertical line */}
-                        <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-[#E8E8E8]" />
+                        <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-[#E8E4D9]" />
                         {/* Progress line */}
                         <motion.div
-                            className="absolute left-5 top-5 w-0.5 bg-[#FF6600]"
+                            className="absolute left-5 top-5 w-0.5 bg-[#6B7A41]"
                             initial={{ height: 0 }}
                             animate={{ height: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
                             transition={{ duration: 1, ease: 'easeOut' }}
@@ -132,18 +132,18 @@ export default function OrderDetailPage({ params }: Props) {
                                             transition={{ delay: idx * 0.1 }}
                                             className={cn(
                                                 'w-10 h-10 rounded-full flex items-center justify-center z-10 border-2 transition-all',
-                                                done && !active ? 'bg-[#FF6600] border-[#FF6600]' : '',
-                                                active ? 'bg-[#FF6600] border-[#FF6600] shadow-lg shadow-orange-200' : '',
-                                                !done ? 'bg-white border-[#E8E8E8]' : ''
+                                                done && !active ? 'bg-[#6B7A41] border-[#6B7A41]' : '',
+                                                active ? 'bg-[#6B7A41] border-[#6B7A41] shadow-lg shadow-[#6B7A41]/20' : '',
+                                                !done ? 'bg-white border-[#E8E4D9]' : ''
                                             )}
                                         >
                                             <Icon size={16} className={done ? 'text-white' : 'text-[#ccc]'} />
                                         </motion.div>
                                         <div className="pt-1.5">
-                                            <p className={cn('text-sm font-semibold', done ? 'text-[#2E2E2E]' : 'text-[#ccc]')}>
+                                            <p className={cn('text-sm font-semibold', done ? 'text-[#2C331F]' : 'text-[#ccc]')}>
                                                 {step.label}
                                             </p>
-                                            <p className={cn('text-xs mt-0.5', done ? 'text-[#767676]' : 'text-[#ccc]')}>
+                                            <p className={cn('text-xs mt-0.5', done ? 'text-[#595959]' : 'text-[#ccc]')}>
                                                 {step.desc}
                                             </p>
                                         </div>
@@ -155,26 +155,26 @@ export default function OrderDetailPage({ params }: Props) {
                 </div>
 
                 {/* Items */}
-                <div className="card bg-white p-4">
-                    <h2 className="font-bold text-[#2E2E2E] mb-3">Items ({order.items.length})</h2>
+                <div className="bg-[#F9F6EE] rounded-xl p-4 border border-[#E8E4D9]/60">
+                    <h2 className="font-bold text-[#2C331F] mb-3">Items ({order.items.length})</h2>
                     <div className="space-y-2">
                         {order.items.map((item, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                                <span className="text-[#767676] flex-1 mr-2">{item.name} × {item.quantity} {item.size && `(${item.size})`}</span>
-                                <span className="font-medium text-[#2E2E2E]">{formatPrice(item.price * item.quantity)}</span>
+                                <span className="text-[#595959] flex-1 mr-2">{item.name} × {item.quantity} {item.size && `(${item.size})`}</span>
+                                <span className="font-medium text-[#2C331F]">{formatPrice(item.price * item.quantity)}</span>
                             </div>
                         ))}
-                        <div className="pt-2 border-t border-[#E8E8E8] flex justify-between font-bold">
-                            <span className="text-[#2E2E2E]">Total</span>
-                            <span className="text-[#FF6600]">{formatPrice(order.total)}</span>
+                        <div className="pt-2 border-t border-[#E8E4D9] flex justify-between font-bold">
+                            <span className="text-[#2C331F]">Total</span>
+                            <span className="text-[#6B7A41]">{formatPrice(order.total)}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Delivery Address */}
-                <div className="card bg-white p-4">
-                    <h2 className="font-bold text-[#2E2E2E] mb-2">Delivery Address</h2>
-                    <p className="text-sm text-[#767676] leading-relaxed">
+                <div className="bg-[#F9F6EE] rounded-xl p-4 border border-[#E8E4D9]/60">
+                    <h2 className="font-bold text-[#2C331F] mb-2">Delivery Address</h2>
+                    <p className="text-sm text-[#595959] leading-relaxed">
                         {order.address.full_name}<br />
                         {order.address.address}, {order.address.city}<br />
                         {order.address.state} — {order.address.pincode}<br />
@@ -182,10 +182,10 @@ export default function OrderDetailPage({ params }: Props) {
                     </p>
                 </div>
 
-                <div className="card bg-white p-4 flex justify-between items-center">
+                <div className="bg-[#F9F6EE] rounded-xl p-4 border border-[#E8E4D9]/60 flex justify-between items-center">
                     <div>
-                        <p className="text-xs text-[#767676]">Payment Method</p>
-                        <p className="text-sm font-semibold text-[#2E2E2E] capitalize">
+                        <p className="text-xs text-[#595959]">Payment Method</p>
+                        <p className="text-sm font-semibold text-[#2C331F] capitalize">
                             {order.payment_method === 'cod' ? '💵 Cash on Delivery' : '📱 Online Payment'}
                         </p>
                     </div>

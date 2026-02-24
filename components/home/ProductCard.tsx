@@ -16,6 +16,7 @@ export default function ProductCard({ product }: Props) {
 
     const handleQuickAdd = (e: React.MouseEvent) => {
         e.preventDefault()
+        e.stopPropagation()
         addItem({
             product_id: product.id,
             name: product.name,
@@ -28,56 +29,59 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <motion.div
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -3 }}
             transition={{ duration: 0.2 }}
-            className="card bg-white overflow-hidden group flex-shrink-0 w-[160px] sm:w-[180px]"
+            className="bg-white rounded-2xl overflow-hidden group flex-shrink-0 w-[160px] sm:w-[180px] shadow-sm hover:shadow-lg transition-shadow"
         >
             <Link href={`/products/${product.id}`} className="block">
                 {/* Image */}
-                <div className="relative aspect-square bg-[#F9F0EC] overflow-hidden">
+                <div className="product-image-container group">
                     {product.images?.[0] ? (
                         <img
                             src={product.images[0]}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="product-image group-hover:scale-105 transition-transform duration-300"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <Flower2 size={40} className="text-[#FF6600] opacity-40" />
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-rose-100 to-[#F9F6EE]">
+                            <Flower2 size={40} className="text-[#6B7A41] opacity-30" />
                         </div>
                     )}
                     {product.stock === 0 && (
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <span className="bg-white text-[#2E2E2E] text-xs font-semibold px-2 py-0.5 rounded">
+                            <span className="bg-white text-[#2C331F] text-xs font-semibold px-2.5 py-1 rounded-lg">
                                 Out of Stock
                             </span>
                         </div>
                     )}
-                    {product.type && (
-                        <span className="absolute top-2 left-2 badge-orange text-[10px]">
-                            {product.type}
-                        </span>
-                    )}
                 </div>
 
                 {/* Info */}
-                <div className="p-2.5">
-                    <p className="text-xs font-semibold text-[#2E2E2E] line-clamp-2 leading-tight mb-1">
+                <div className="p-3 bg-[#F9F6EE]">
+                    <p className="text-sm font-semibold text-[#2C331F] line-clamp-2 leading-tight mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>
                         {product.name}
                     </p>
-                    <div className="flex items-center justify-between gap-1">
-                        <span className="text-sm font-bold text-[#FF6600]">
-                            {formatPrice(product.price)}
-                        </span>
-                        <button
-                            onClick={handleQuickAdd}
-                            disabled={product.stock === 0}
-                            className="p-1.5 rounded-lg bg-[#FF6600] text-white hover:bg-[#e55a00] active:scale-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Add to cart"
-                        >
-                            <ShoppingCart size={13} />
-                        </button>
+                    <p className="text-sm font-bold text-[#2C331F] mb-2">
+                        {formatPrice(product.price)}
+                    </p>
+
+                    {/* Star rating placeholder */}
+                    <div className="flex items-center gap-0.5 mb-2.5">
+                        {[1, 2, 3, 4].map(i => (
+                            <Star key={i} size={12} className="text-amber-400 fill-amber-400" />
+                        ))}
+                        <Star size={12} className="text-amber-400 fill-amber-400 opacity-50" />
                     </div>
+
+                    {/* ADD TO CART button — matches mockup exactly */}
+                    <button
+                        onClick={handleQuickAdd}
+                        disabled={product.stock === 0}
+                        className="w-full bg-[#6B7A41] text-white text-xs font-bold tracking-wider uppercase py-2.5 rounded-lg hover:bg-[#5A6836] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                        ADD TO CART
+                    </button>
                 </div>
             </Link>
         </motion.div>

@@ -12,7 +12,7 @@ export default async function AdminDashboard() {
     if (!supabaseUrl || !serviceRoleKey) {
         return (
             <div className="p-6">
-                <h1 className="text-2xl font-bold text-[#2E2E2E] mb-1">Dashboard</h1>
+                <h1 className="text-2xl font-bold text-[#2C331F] mb-1">Dashboard</h1>
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mt-4">
                     <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Configuration Error</p>
                     <p className="text-sm text-red-600">
@@ -49,15 +49,15 @@ export default async function AdminDashboard() {
     ])
 
     const stats = [
-        { label: 'Total Products', value: productCount || 0, color: 'bg-orange-50 border-orange-200', textColor: 'text-[#FF6600]', emoji: '🌹' },
+        { label: 'Total Products', value: productCount || 0, color: 'bg-[#6B7A41]/8 border-[#6B7A41]/20', textColor: 'text-[#6B7A41]', emoji: '🌹' },
         { label: 'Total Orders', value: orderCount || 0, color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-600', emoji: '📦' },
-        { label: 'Total Users', value: userCount || 0, color: 'bg-green-50 border-green-200', textColor: 'text-green-600', emoji: '👤' },
+        { label: 'Total Users', value: userCount || 0, color: 'bg-purple-50 border-purple-200', textColor: 'text-purple-600', emoji: '👤' },
     ]
 
     const STATUS_COLORS: Record<string, string> = {
         received: 'bg-gray-100 text-gray-700',
         confirmed: 'bg-blue-100 text-blue-700',
-        packed: 'bg-orange-100 text-orange-700',
+        packed: 'bg-[#6B7A41]/10 text-[#6B7A41]',
         dispatched: 'bg-purple-100 text-purple-700',
         out_for_delivery: 'bg-yellow-100 text-yellow-700',
         delivered: 'bg-green-100 text-green-700',
@@ -66,8 +66,8 @@ export default async function AdminDashboard() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-bold text-[#2E2E2E] mb-1">Dashboard</h1>
-            <p className="text-sm text-[#767676] mb-6">Welcome back, Admin</p>
+            <h1 className="text-2xl font-bold text-[#2C331F] mb-1">Dashboard</h1>
+            <p className="text-sm text-[#595959] mb-6" style={{ fontFamily: 'Inter, sans-serif' }}>Welcome back, Admin</p>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-8">
@@ -75,7 +75,7 @@ export default async function AdminDashboard() {
                     <div key={s.label} className={`rounded-2xl border p-5 ${s.color}`}>
                         <p className="text-3xl mb-1">{s.emoji}</p>
                         <p className={`text-3xl font-bold ${s.textColor}`}>{s.value}</p>
-                        <p className="text-sm text-[#767676] font-medium mt-1">{s.label}</p>
+                        <p className="text-sm text-[#595959] font-medium mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>{s.label}</p>
                     </div>
                 ))}
             </div>
@@ -85,7 +85,7 @@ export default async function AdminDashboard() {
                 <div className="bg-red-50 rounded-2xl border border-red-200 p-5 mb-8">
                     <div className="flex items-center gap-2 mb-3">
                         <AlertTriangle size={16} className="text-red-500" />
-                        <h2 className="font-bold text-red-700 text-sm">Low Stock Alerts</h2>
+                        <h2 className="font-bold text-red-700 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Low Stock Alerts</h2>
                         <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 ml-1">
                             {lowStockProducts.length}
                         </span>
@@ -97,7 +97,7 @@ export default async function AdminDashboard() {
                                 href={`/admin/products/${p.id}`}
                                 className="flex items-center justify-between bg-white rounded-lg px-3 py-2 hover:bg-red-100/50 transition-colors"
                             >
-                                <span className="text-sm font-medium text-[#2E2E2E] truncate max-w-[200px]">{p.name}</span>
+                                <span className="text-sm font-medium text-[#2C331F] truncate max-w-[200px]">{p.name}</span>
                                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.stock === 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
                                     {p.stock === 0 ? 'Out of Stock' : `${p.stock} left`}
                                 </span>
@@ -108,26 +108,26 @@ export default async function AdminDashboard() {
             )}
 
             {/* Recent orders */}
-            <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#E8E8E8]">
-                    <h2 className="font-bold text-[#2E2E2E]">Recent Orders</h2>
+            <div className="bg-[#F9F6EE] rounded-2xl border border-[#E8E4D9]/60 overflow-hidden">
+                <div className="px-5 py-4 border-b border-[#E8E4D9]/60">
+                    <h2 className="font-bold text-[#2C331F]" style={{ fontFamily: 'Inter, sans-serif' }}>Recent Orders</h2>
                 </div>
                 <table className="w-full text-sm">
-                    <thead className="bg-[#F5F5F5]">
+                    <thead className="bg-[#FDECEF]">
                         <tr>
-                            <th className="text-left px-5 py-3 text-xs font-semibold text-[#767676]">Order ID</th>
-                            <th className="text-left px-3 py-3 text-xs font-semibold text-[#767676]">Date</th>
-                            <th className="text-left px-3 py-3 text-xs font-semibold text-[#767676]">Status</th>
-                            <th className="text-right px-5 py-3 text-xs font-semibold text-[#767676]">Total</th>
+                            <th className="text-left px-5 py-3 text-xs font-semibold text-[#595959]" style={{ fontFamily: 'Inter, sans-serif' }}>Order ID</th>
+                            <th className="text-left px-3 py-3 text-xs font-semibold text-[#595959]" style={{ fontFamily: 'Inter, sans-serif' }}>Date</th>
+                            <th className="text-left px-3 py-3 text-xs font-semibold text-[#595959]" style={{ fontFamily: 'Inter, sans-serif' }}>Status</th>
+                            <th className="text-right px-5 py-3 text-xs font-semibold text-[#595959]" style={{ fontFamily: 'Inter, sans-serif' }}>Total</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#F5F5F5]">
+                    <tbody className="divide-y divide-[#E8E4D9]/60">
                         {(recentOrders || []).map((order: any) => (
-                            <tr key={order.id} className="hover:bg-[#FAFAFA]">
-                                <td className="px-5 py-3 font-mono text-xs text-[#2E2E2E]">
+                            <tr key={order.id} className="hover:bg-[#FDECEF]/50">
+                                <td className="px-5 py-3 font-mono text-xs text-[#2C331F]">
                                     #{`DRG${String(order.order_number).padStart(5, '0')}`}
                                 </td>
-                                <td className="px-3 py-3 text-[#767676] text-xs">
+                                <td className="px-3 py-3 text-[#595959] text-xs">
                                     {new Date(order.created_at).toLocaleDateString('en-IN')}
                                 </td>
                                 <td className="px-3 py-3">
@@ -135,14 +135,14 @@ export default async function AdminDashboard() {
                                         {order.status}
                                     </span>
                                 </td>
-                                <td className="px-5 py-3 text-right font-bold text-[#FF6600]">
+                                <td className="px-5 py-3 text-right font-bold text-[#6B7A41]">
                                     ₹{order.total}
                                 </td>
                             </tr>
                         ))}
                         {(!recentOrders || recentOrders.length === 0) && (
                             <tr>
-                                <td colSpan={4} className="px-5 py-8 text-center text-[#767676] text-sm">No orders yet</td>
+                                <td colSpan={4} className="px-5 py-8 text-center text-[#595959] text-sm">No orders yet</td>
                             </tr>
                         )}
                     </tbody>

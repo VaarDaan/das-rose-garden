@@ -1,9 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-orange-primary: #FF6600;
-  --color-charcoal: #2E2E2E;
+  --color-olive: #6B7A41;
+  --color-olive-dark: #5A6836;
+  --color-olive-light: #8A9C5A;
+  --color-blush: #FDECEF;
+  --color-cream: #F9F6EE;
+  --color-forest: #2C331F;
+  --color-muted: #595959;
+  --font-family-serif: 'Playfair Display', Georgia, serif;
   --font-family-sans: 'Inter', system-ui, sans-serif;
 }
 
@@ -20,12 +26,22 @@ html {
 }
 
 body {
-  background-color: #ffffff;
-  color: #2E2E2E;
+  background-color: #FDECEF;
+  color: #595959;
   min-height: 100vh;
   overscroll-behavior: none;
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: #2C331F;
 }
 
 /* Custom scrollbar */
@@ -35,37 +51,41 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #F9F6EE;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #B5B5A8;
   border-radius: 2px;
 }
 
-/* Reusable classes — defined as plain CSS for Tailwind v4 compatibility */
+/* ── Button: Primary (Olive Green) ─────────────────────────── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: #FF6600;
+  background-color: #6B7A41;
   color: white;
   font-weight: 600;
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   padding: 0.625rem 1.25rem;
-  transition: background-color 0.15s, transform 0.15s;
+  transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
   cursor: pointer;
   border: none;
   font-size: 0.875rem;
   text-decoration: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .btn-primary:hover {
-  background-color: #e55a00;
+  background-color: #5A6836;
+  box-shadow: 0 4px 12px rgba(107, 122, 65, 0.25);
 }
 
 .btn-primary:active {
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 
 .btn-primary:disabled {
@@ -73,35 +93,39 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Button: Secondary (Olive Outlined) ────────────────────── */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #FF6600;
-  color: #FF6600;
+  border: 2px solid #6B7A41;
+  color: #6B7A41;
   font-weight: 600;
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   padding: 0.625rem 1.25rem;
-  transition: background-color 0.15s, transform 0.15s;
+  transition: background-color 0.2s, transform 0.15s, color 0.2s;
   cursor: pointer;
   background-color: transparent;
   font-size: 0.875rem;
   text-decoration: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .btn-secondary:hover {
-  background-color: #fff7f2;
+  background-color: rgba(107, 122, 65, 0.08);
 }
 
 .btn-secondary:active {
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 
+/* ── Button: Ghost ──────────────────────────────────────────── */
 .btn-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #2E2E2E;
+  color: #2C331F;
   font-weight: 500;
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
@@ -111,31 +135,57 @@ body {
   border: none;
   font-size: 0.875rem;
   text-decoration: none;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .btn-ghost:hover {
-  background-color: #F5F5F5;
+  background-color: #F9F6EE;
 }
 
+/* ── Button: Danger (Red) ──────────────────────────────────── */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #C0392B;
+  color: white;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  transition: background-color 0.15s, transform 0.15s;
+  cursor: pointer;
+  border: none;
+  font-size: 0.75rem;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.btn-danger:hover {
+  background-color: #A93226;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
 .card {
-  background-color: white;
-  border-radius: 0.75rem;
-  border: 1px solid #E8E8E8;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.2s;
+  background-color: #F9F6EE;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(107, 122, 65, 0.12);
+  box-shadow: 0 2px 8px rgba(44, 51, 31, 0.05);
+  transition: box-shadow 0.25s;
 }
 
 .card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(44, 51, 31, 0.1);
 }
 
+/* ── Section Title ──────────────────────────────────────────── */
 .section-title {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
-  color: #2E2E2E;
+  color: #2C331F;
   letter-spacing: -0.02em;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
+/* ── Badge ──────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -145,9 +195,9 @@ body {
   font-weight: 500;
 }
 
-.badge-orange {
-  background-color: #fff2e5;
-  color: #FF6600;
+.badge-olive {
+  background-color: rgba(107, 122, 65, 0.12);
+  color: #6B7A41;
   display: inline-flex;
   align-items: center;
   border-radius: 9999px;
@@ -156,46 +206,61 @@ body {
   font-weight: 500;
 }
 
+/* Keep backward compat alias */
+.badge-orange {
+  background-color: rgba(107, 122, 65, 0.12);
+  color: #6B7A41;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ── Input Field ────────────────────────────────────────────── */
 .input-field {
   width: 100%;
-  border: 1px solid #E8E8E8;
-  border-radius: 0.5rem;
+  border: 1px solid #D9D4CA;
+  border-radius: 0.625rem;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   background-color: white;
-  color: #2E2E2E;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  color: #2C331F;
+  transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
 .input-field:focus {
-  border-color: #FF6600;
-  box-shadow: 0 0 0 2px rgba(255, 102, 0, 0.1);
+  border-color: #6B7A41;
+  box-shadow: 0 0 0 3px rgba(107, 122, 65, 0.12);
 }
 
+/* ── Size Chip ──────────────────────────────────────────────── */
 .size-chip {
-  border: 1px solid #E8E8E8;
-  border-radius: 0.375rem;
+  border: 1px solid #D9D4CA;
+  border-radius: 0.5rem;
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
   background-color: white;
-  color: #2E2E2E;
+  color: #2C331F;
 }
 
 .size-chip.selected {
-  border-color: #FF6600;
-  background-color: #fff7f2;
-  color: #FF6600;
+  border-color: #6B7A41;
+  background-color: rgba(107, 122, 65, 0.08);
+  color: #6B7A41;
 }
 
 .size-chip:not(.selected):hover {
-  border-color: #999;
+  border-color: #8A9C5A;
 }
 
+/* ── Hide Scrollbar ─────────────────────────────────────────── */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -205,17 +270,72 @@ body {
   scrollbar-width: none;
 }
 
-/* Swiper overrides */
+/* ── Accordion ──────────────────────────────────────────────── */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #2C331F;
+  transition: background-color 0.15s;
+}
+
+.accordion-header:hover {
+  background-color: rgba(107, 122, 65, 0.04);
+}
+
+.accordion-chevron {
+  transition: transform 0.25s ease;
+  color: #595959;
+}
+
+.accordion-chevron.open {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+/* ── Swiper overrides ───────────────────────────────────────── */
 .swiper-button-next,
 .swiper-button-prev {
-  color: #FF6600 !important;
+  color: #6B7A41 !important;
 }
 
 .swiper-pagination-bullet-active {
-  background: #FF6600 !important;
+  background: #6B7A41 !important;
 }
 
 .swiper-pagination-bullet {
-  background: #ccc !important;
+  background: #B5B5A8 !important;
   opacity: 1 !important;
+}
+
+/* ── Utility: serif heading ─────────────────────────────────── */
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* ── Image Display Utilities ────────────────────────────────── */
+.product-image-container {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: #F0ECE2;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

@@ -250,6 +250,47 @@ export default function AdminProductFormPage() {
                         )}
                     </div>
 
+                    {/* Add Image by URL */}
+                    <div className="mt-4 flex gap-2">
+                        <input
+                            type="url"
+                            id="image-url-input"
+                            placeholder="Paste image URL (https://...)"
+                            className="input-field flex-1"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    const input = e.currentTarget
+                                    const url = input.value.trim()
+                                    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                                        setForm(prev => ({ ...prev, images: [...prev.images, url] }))
+                                        input.value = ''
+                                        setError('')
+                                    } else if (url) {
+                                        setError('Please enter a valid URL starting with http:// or https://')
+                                    }
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const input = document.getElementById('image-url-input') as HTMLInputElement
+                                const url = input?.value?.trim()
+                                if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                                    setForm(prev => ({ ...prev, images: [...prev.images, url] }))
+                                    input.value = ''
+                                    setError('')
+                                } else if (url) {
+                                    setError('Please enter a valid URL starting with http:// or https://')
+                                }
+                            }}
+                            className="btn-primary px-4 py-2 text-sm whitespace-nowrap bg-[#2C331F] text-white hover:bg-[#3A4329] rounded-xl"
+                        >
+                            <Plus size={16} className="inline mr-1" /> Add URL
+                        </button>
+                    </div>
+
                     {/* Image grid */}
                     {form.images.length > 0 && (
                         <div className="grid grid-cols-3 gap-2 mt-4">

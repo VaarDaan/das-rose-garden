@@ -18,14 +18,14 @@ export default function HomeSection({ title, products, viewAllHref }: Props) {
     if (!products || products.length === 0) return null
 
     return (
-        <section className="py-4">
+        <section className="py-5">
             {/* Section header */}
-            <div className="flex items-center justify-between px-4 mb-3">
+            <div className="flex items-center justify-between px-4 mb-4">
                 <h2 className="section-title">{title}</h2>
                 {viewAllHref && (
                     <Link
                         href={viewAllHref}
-                        className="text-xs font-semibold text-[#FF6600] hover:underline"
+                        className="text-xs font-semibold text-[#6B7A41] hover:underline"
                     >
                         View All →
                     </Link>

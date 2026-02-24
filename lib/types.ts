@@ -82,3 +82,12 @@ export interface HomeSection {
     sort_order: number
     active: boolean
 }
+
+export interface Category {
+    id: string
+    name: string
+    image_url: string
+    link: string | null
+    sort_order: number
+    is_featured: boolean
+}

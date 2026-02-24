@@ -20,7 +20,7 @@ const FALLBACK_BANNERS = [
         id: '1',
         image_url: '',
         link: '/categories',
-        gradient: 'from-rose-500 to-pink-600',
+        gradient: 'from-[#6B7A41] to-[#8A9C5A]',
         headline: '🌹 Fresh Roses, Delivered Daily',
         sub: 'Premium blooms straight from the garden',
     },
@@ -28,7 +28,7 @@ const FALLBACK_BANNERS = [
         id: '2',
         image_url: '',
         link: '/categories',
-        gradient: 'from-orange-400 to-red-500',
+        gradient: 'from-rose-400 to-pink-500',
         headline: '🌸 Seasonal Specials',
         sub: 'Up to 30% off on seasonal bouquets',
     },
@@ -36,7 +36,7 @@ const FALLBACK_BANNERS = [
         id: '3',
         image_url: '',
         link: '/categories',
-        gradient: 'from-purple-500 to-indigo-600',
+        gradient: 'from-[#8A9C5A] to-[#2C331F]',
         headline: '🌺 Custom Arrangements',
         sub: 'Handcrafted with love for every occasion',
     },
@@ -82,7 +82,7 @@ export default function HeroSlider({ banners }: Props) {
                                 className={`flex flex-col items-center justify-center h-full bg-gradient-to-br ${b.gradient} text-white text-center px-8 gap-2`}
                             >
                                 <Flower2 size={48} strokeWidth={1.5} className="opacity-80 mb-2" />
-                                <h2 className="text-xl sm:text-2xl font-bold drop-shadow">{b.headline}</h2>
+                                <h2 className="text-xl sm:text-2xl font-bold drop-shadow text-white">{b.headline}</h2>
                                 <p className="text-sm font-medium opacity-90">{b.sub}</p>
                                 <span className="mt-3 bg-white/20 backdrop-blur rounded-full px-5 py-1.5 text-sm font-semibold">
                                     Shop Now →

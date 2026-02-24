@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
         const timestamp = Date.now()
         const random = Math.random().toString(36).substring(2, 8)
-        const fileName = `${timestamp}-${random}.${ext}`
+        const fileName = `products/${timestamp}-${random}.${ext}`
 
         // Read file into buffer
         const arrayBuffer = await file.arrayBuffer()
@@ -77,7 +77,8 @@ export async function POST(req: Request) {
             })
 
         if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 })
+            console.error('Supabase storage upload error:', error)
+            return NextResponse.json({ error: `Upload failed: ${error.message}` }, { status: 500 })
         }
 
         // Get the public URL

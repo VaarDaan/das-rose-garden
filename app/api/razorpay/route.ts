@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 
-const RAZORPAY_KEY_ID = 'rzp_test_SIr1jxT4ytMqqL';
-const RAZORPAY_KEY_SECRET = 'yCcYjzqI4Srr72TFrnlWyoUE';
+const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
 export async function POST(req: Request) {
     try {
+        if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+            console.error('Razorpay keys missing from environment');
+            return NextResponse.json({ error: 'Razorpay keys not configured' }, { status: 500 });
+        }
+
         const { amount, receipt } = await req.json();
 
         const auth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');

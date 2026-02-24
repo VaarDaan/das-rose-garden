@@ -107,7 +107,8 @@ export default function CheckoutPage() {
                 const rzpOrder = await res.json()
 
                 if (!res.ok) {
-                    alert('Payment gateway error. Please try again.')
+                    console.error('Backend Razorpay Order Error:', rzpOrder);
+                    alert(`Payment gateway error: ${rzpOrder.error?.description || rzpOrder.error || 'Please try again.'}`)
                     setPlacing(false)
                     return
                 }
@@ -126,7 +127,7 @@ export default function CheckoutPage() {
                 }
 
                 const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_SIr1jxT4ytMqqL',
+                    key: razorpayKey,
                     amount: rzpOrder.amount,
                     currency: rzpOrder.currency,
                     name: 'Das Rose Garden',

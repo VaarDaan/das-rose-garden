@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,31 +13,54 @@ import Link from 'next/link'
 import { createShipment } from '@/lib/shipping'
 import { cn } from '@/lib/utils'
 
-// Dynamically load the Razorpay SDK script
+// ─── Razorpay Key (hardcoded so it NEVER relies on env resolution) ───
+const RAZORPAY_KEY_ID = 'rzp_test_SJsOtIgYyz2NgA'
+
+// ─── Dynamically inject the Razorpay SDK ─────────────────────────────
 function loadRazorpaySDK(): Promise<boolean> {
     return new Promise((resolve) => {
+        if (typeof window === 'undefined') return resolve(false)
+
         // Already loaded
-        if ((window as any).Razorpay) return resolve(true)
-        // Already has a script tag pending
-        if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
-            // Wait for it
+        if ((window as any).Razorpay) {
+            console.log('[Razorpay] SDK already available on window')
+            return resolve(true)
+        }
+
+        // Check if script tag already exists
+        const existing = document.querySelector('script[src*="checkout.razorpay.com"]')
+        if (existing) {
+            console.log('[Razorpay] Script tag exists, waiting…')
             let attempts = 0
             const interval = setInterval(() => {
                 attempts++
-                if ((window as any).Razorpay) { clearInterval(interval); resolve(true) }
-                else if (attempts >= 100) { clearInterval(interval); resolve(false) }
+                if ((window as any).Razorpay) {
+                    console.log('[Razorpay] SDK became available after waiting')
+                    clearInterval(interval)
+                    resolve(true)
+                } else if (attempts >= 100) {
+                    console.error('[Razorpay] SDK never became available after 10s')
+                    clearInterval(interval)
+                    resolve(false)
+                }
             }, 100)
             return
         }
+
+        // Create and inject a new script tag
+        console.log('[Razorpay] Injecting script tag…')
         const script = document.createElement('script')
         script.src = 'https://checkout.razorpay.com/v1/checkout.js'
         script.async = true
-        script.onload = () => resolve(true)
-        script.onerror = () => {
-            console.error('Failed to load Razorpay SDK from CDN')
+        script.onload = () => {
+            console.log('[Razorpay] ✅ Script loaded successfully')
+            resolve(true)
+        }
+        script.onerror = (err) => {
+            console.error('[Razorpay] ❌ Script FAILED to load:', err)
             resolve(false)
         }
-        document.body.appendChild(script)
+        document.head.appendChild(script)
     })
 }
 
@@ -55,14 +78,19 @@ type FormData = z.infer<typeof schema>
 export default function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCartStore()
     const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('cod')
-
-    // Pre-load Razorpay SDK on mount so it's ready when user clicks Pay
-    useEffect(() => { loadRazorpaySDK() }, [])
     const [placing, setPlacing] = useState(false)
-
     const [showSummary, setShowSummary] = useState(false)
+    const [razorpayReady, setRazorpayReady] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+
+    // Pre-load Razorpay SDK as soon as the checkout page mounts
+    useEffect(() => {
+        loadRazorpaySDK().then((loaded) => {
+            console.log('[Razorpay] Pre-load result:', loaded)
+            setRazorpayReady(loaded)
+        })
+    }, [])
 
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -128,42 +156,52 @@ export default function CheckoutPage() {
 
         if (paymentMethod === 'online') {
             try {
-                // 1. Create native Razorpay order
+                // ── Step 1: Create Razorpay order via backend ──
+                console.log('[Checkout] Calling /api/razorpay to create order…')
                 const res = await fetch('/api/razorpay', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: total, receipt: `rcpt_${Date.now()}` })
                 })
                 const rzpOrder = await res.json()
+                console.log('[Checkout] Backend response:', res.status, rzpOrder)
 
                 if (!res.ok) {
-                    console.error('Backend Razorpay Order Error:', rzpOrder);
+                    console.error('[Checkout] ❌ Backend order creation failed:', rzpOrder)
                     alert(`Payment gateway error: ${rzpOrder.error?.description || rzpOrder.error || 'Please try again.'}`)
                     setPlacing(false)
                     return
                 }
 
-                // 2. Load/wait for Razorpay SDK
-                const sdkLoaded = await loadRazorpaySDK()
-                if (!sdkLoaded) {
-                    console.error('Razorpay SDK failed to load.')
-                    alert('Payment gateway could not be loaded. Please check your internet connection and try again.');
-                    setPlacing(false);
-                    return;
+                console.log('[Checkout] ✅ Order created, order_id:', rzpOrder.id)
+
+                // ── Step 2: Ensure Razorpay SDK is loaded ──
+                let sdkReady = razorpayReady
+                if (!sdkReady) {
+                    console.log('[Checkout] SDK not pre-loaded, loading now…')
+                    sdkReady = await loadRazorpaySDK()
                 }
 
-                const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_SJsOtIgYyz2NgA';
+                if (!sdkReady || !(window as any).Razorpay) {
+                    console.error('[Checkout] ❌ Razorpay SDK is not available on window')
+                    alert('Payment gateway could not be loaded. Please check your internet connection, disable any ad-blockers, and try again.')
+                    setPlacing(false)
+                    return
+                }
 
+                console.log('[Checkout] ✅ Razorpay SDK is available, opening modal…')
+
+                // ── Step 3: Initialize Razorpay and open modal ──
                 const options = {
-                    key: razorpayKey,
+                    key: RAZORPAY_KEY_ID,
                     amount: rzpOrder.amount,
                     currency: rzpOrder.currency,
                     name: 'Das Rose Garden',
                     description: 'Order Payment',
                     order_id: rzpOrder.id,
                     handler: async function (response: any) {
-                        console.log('Payment successful via Razorpay', response);
-                        await saveOrderAndShip(user, formData, 'online', response);
+                        console.log('[Checkout] ✅ Payment successful:', response)
+                        await saveOrderAndShip(user, formData, 'online', response)
                     },
                     prefill: {
                         name: formData.full_name,
@@ -175,26 +213,28 @@ export default function CheckoutPage() {
                     },
                     modal: {
                         ondismiss: function () {
+                            console.log('[Checkout] Payment modal dismissed by user')
                             setPlacing(false)
                         }
                     }
-                };
+                }
 
-                const rzp = new (window as any).Razorpay(options);
+                console.log('[Checkout] Razorpay options:', { ...options, key: '***' })
+                const rzp = new (window as any).Razorpay(options)
                 rzp.on('payment.failed', function (response: any) {
-                    console.error('Razorpay payment.failed response:', response.error);
-                    alert(`Payment failed: ${response.error.description || 'Please try again.'}`);
+                    console.error('[Checkout] ❌ Payment failed:', response.error)
+                    alert(`Payment failed: ${response.error.description || 'Please try again.'}`)
                     setPlacing(false)
-                });
-                rzp.open();
+                })
+                rzp.open()
             } catch (err) {
-                console.error('Razorpay process failed:', err)
+                console.error('[Checkout] ❌ Exception during payment:', err)
                 setPlacing(false)
                 alert('Something went wrong. Please check your connection.')
             }
         } else {
             // Cash on delivery
-            await saveOrderAndShip(user, formData, 'cod');
+            await saveOrderAndShip(user, formData, 'cod')
         }
     }
 
@@ -219,117 +259,97 @@ export default function CheckoutPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto px-4 py-4 space-y-4">
 
                 {/* Collapsible Order Summary */}
-                <div className="bg-[#F9F6EE] rounded-xl border border-[#E8E4D9]/60 overflow-hidden">
-                    <button
-                        type="button"
-                        onClick={() => setShowSummary(!showSummary)}
-                        className="w-full flex items-center justify-between px-4 py-3"
-                    >
-                        <span className="font-bold text-[#2C331F] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Order Summary</span>
+                <div className="bg-white rounded-2xl border border-[#E8E4D9] overflow-hidden">
+                    <button type="button" onClick={() => setShowSummary(!showSummary)} className="w-full flex items-center justify-between px-4 py-3">
+                        <span className="text-sm font-bold text-[#2C331F]">Order Summary ({items.length} items)</span>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm text-[#595959]">{items.reduce((s, i) => s + i.quantity, 0)} Items: <strong className="text-[#2C331F]">{formatPrice(total)}</strong></span>
-                            <ChevronDown size={16} className={cn('text-[#595959] transition-transform', showSummary && 'rotate-180')} />
+                            <span className="text-sm font-bold text-[#6B7A41]">{formatPrice(total)}</span>
+                            <ChevronDown size={16} className={cn('transition-transform text-[#595959]', showSummary && 'rotate-180')} />
                         </div>
                     </button>
                     {showSummary && (
-                        <div className="px-4 pb-3 space-y-2 border-t border-[#E8E4D9]/60 pt-2">
-                            {items.map((item) => (
-                                <div key={`${item.product_id}-${item.size}`} className="flex justify-between text-sm">
-                                    <span className="text-[#595959] flex-1 mr-2 line-clamp-1">
-                                        {item.name} × {item.quantity} {item.size && `(${item.size})`}
-                                    </span>
-                                    <span className="font-medium text-[#2C331F] shrink-0">{formatPrice(item.price * item.quantity)}</span>
+                        <div className="px-4 pb-3 space-y-2 border-t border-[#E8E4D9]">
+                            {items.map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between py-1.5 text-sm">
+                                    <span className="text-[#2C331F] truncate max-w-[60%]">{item.name} × {item.quantity}</span>
+                                    <span className="text-[#595959]">{formatPrice(item.price * item.quantity)}</span>
                                 </div>
                             ))}
-                            <div className="flex justify-between text-sm text-[#595959]">
-                                <span>Delivery</span>
-                                <span className={shipping === 0 ? 'text-green-700 font-medium' : ''}>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
+                            <div className="pt-1.5 border-t border-[#E8E4D9]">
+                                <div className="flex justify-between text-xs text-[#595959]">
+                                    <span>Subtotal</span><span>{formatPrice(totalPrice())}</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-[#595959]">
+                                    <span>Shipping</span><span>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Contact Information */}
-                <div className="bg-[#F9F6EE] rounded-xl p-4 border border-[#E8E4D9]/60">
-                    <h2 className="font-bold text-[#2C331F] mb-3 text-base">Contact Information</h2>
-                    <div className="space-y-3">
-                        <div>
-                            <input {...register('phone')} placeholder="Phone" type="tel" className="input-field" />
-                            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                {/* Shipping Form */}
+                <div className="bg-white rounded-2xl border border-[#E8E4D9] p-4 space-y-3">
+                    <h2 className="text-sm font-bold text-[#2C331F] mb-1">Shipping Address</h2>
+                    {[
+                        { name: 'full_name' as const, label: 'Full Name', type: 'text' },
+                        { name: 'phone' as const, label: 'Phone', type: 'tel' },
+                        { name: 'pincode' as const, label: 'Pincode', type: 'text' },
+                        { name: 'address' as const, label: 'Address', type: 'text' },
+                        { name: 'city' as const, label: 'City', type: 'text' },
+                        { name: 'state' as const, label: 'State', type: 'text' },
+                    ].map((field) => (
+                        <div key={field.name}>
+                            <label className="block text-xs text-[#595959] mb-0.5 font-medium">{field.label}</label>
+                            <input
+                                {...register(field.name)}
+                                type={field.type}
+                                className={cn(
+                                    'w-full px-3 py-2.5 rounded-xl text-sm bg-[#F9F6EE] border transition-colors focus:outline-none focus:ring-2 focus:ring-[#6B7A41]',
+                                    errors[field.name] ? 'border-red-400' : 'border-[#E8E4D9]'
+                                )}
+                            />
+                            {errors[field.name] && <p className="text-red-500 text-xs mt-0.5">{errors[field.name]?.message}</p>}
                         </div>
-                    </div>
-                </div>
-
-                {/* Shipping Address */}
-                <div className="bg-[#F9F6EE] rounded-xl p-4 border border-[#E8E4D9]/60">
-                    <h2 className="font-bold text-[#2C331F] mb-3 text-base">Shipping Address</h2>
-                    <div className="grid grid-cols-1 gap-3">
-                        <div>
-                            <input {...register('full_name')} placeholder="Name" className="input-field" />
-                            {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name.message}</p>}
-                        </div>
-                        <div>
-                            <textarea {...register('address')} placeholder="Address" rows={2} className="input-field resize-none" />
-                            {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <input {...register('city')} placeholder="City" className="input-field" />
-                                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
-                            </div>
-                            <div>
-                                <input {...register('pincode')} placeholder="Postal Code" maxLength={6} className="input-field" />
-                                {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode.message}</p>}
-                            </div>
-                        </div>
-                        <div>
-                            <input {...register('state')} placeholder="State" className="input-field" />
-                            {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
                 {/* Payment Method */}
-                <div className="bg-[#F9F6EE] rounded-xl p-4 border border-[#E8E4D9]/60">
-                    <h2 className="font-bold text-[#2C331F] mb-3 text-base">Payment Method</h2>
-                    <div className="space-y-3">
-                        {[
-                            { method: 'online' as const, label: 'Pay Online', sub: 'UPI, Cards, Wallets via Razorpay', emoji: '💳' },
-                            { method: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when delivered', emoji: '💵' },
-                        ].map(({ method, label, sub, emoji }) => (
-                            <button
-                                key={method}
-                                type="button"
-                                onClick={() => setPaymentMethod(method)}
-                                className={`flex items-center gap-3 w-full p-3 rounded-xl border-2 transition-all text-left ${paymentMethod === method
-                                    ? 'border-[#6B7A41] bg-[#6B7A41]/5'
-                                    : 'border-[#D9D4CA] hover:border-[#B5B5A8]'
-                                    }`}
-                            >
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === method ? 'border-[#6B7A41]' : 'border-[#D9D4CA]'}`}>
-                                    {paymentMethod === method && <div className="w-2.5 h-2.5 rounded-full bg-[#6B7A41]" />}
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-semibold text-[#2C331F]">{label}</p>
-                                    <p className="text-xs text-[#595959]">{sub}</p>
-                                </div>
-                                <span className="text-xl">{emoji}</span>
-                            </button>
-                        ))}
-                    </div>
+                <div className="bg-white rounded-2xl border border-[#E8E4D9] p-4 space-y-3">
+                    <h2 className="text-sm font-bold text-[#2C331F] mb-1">Payment Method</h2>
+                    {[
+                        { value: 'cod' as const, label: 'Cash on Delivery', icon: '💵' },
+                        { value: 'online' as const, label: 'Pay Online (Razorpay)', icon: '💳' },
+                    ].map((m) => (
+                        <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setPaymentMethod(m.value)}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left',
+                                paymentMethod === m.value
+                                    ? 'border-[#6B7A41] bg-[#6B7A41]/5 ring-1 ring-[#6B7A41]'
+                                    : 'border-[#E8E4D9] hover:border-[#B5B5A8]'
+                            )}
+                        >
+                            <span className="text-xl">{m.icon}</span>
+                            <span className="text-sm font-semibold text-[#2C331F]">{m.label}</span>
+                        </button>
+                    ))}
                 </div>
 
+                {/* Place Order Button */}
                 <button
                     type="submit"
                     disabled={placing}
-                    className="btn-primary w-full py-4 text-sm !rounded-xl"
+                    className="w-full bg-[#6B7A41] text-white font-bold py-4 rounded-2xl text-base hover:bg-[#5A6836] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                    {placing ? 'Processing…' : 'PLACE ORDER'}
+                    {placing ? (
+                        <><span className="animate-spin">⏳</span> Processing…</>
+                    ) : (
+                        <>{paymentMethod === 'online' ? '💳 Pay Now' : '📦 Place Order'} — {formatPrice(total)}</>
+                    )}
                 </button>
 
-                <p className="text-center text-xs text-[#595959] pb-2">
-                    By placing order, you agree to <Link href="#" className="text-[#6B7A41] underline">Terms</Link>
-                </p>
             </form>
         </div>
     )

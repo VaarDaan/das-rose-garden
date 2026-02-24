@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,9 +10,36 @@ import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/utils'
 import { Flower2, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
-import Script from 'next/script'
 import { createShipment } from '@/lib/shipping'
 import { cn } from '@/lib/utils'
+
+// Dynamically load the Razorpay SDK script
+function loadRazorpaySDK(): Promise<boolean> {
+    return new Promise((resolve) => {
+        // Already loaded
+        if ((window as any).Razorpay) return resolve(true)
+        // Already has a script tag pending
+        if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
+            // Wait for it
+            let attempts = 0
+            const interval = setInterval(() => {
+                attempts++
+                if ((window as any).Razorpay) { clearInterval(interval); resolve(true) }
+                else if (attempts >= 100) { clearInterval(interval); resolve(false) }
+            }, 100)
+            return
+        }
+        const script = document.createElement('script')
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+        script.async = true
+        script.onload = () => resolve(true)
+        script.onerror = () => {
+            console.error('Failed to load Razorpay SDK from CDN')
+            resolve(false)
+        }
+        document.body.appendChild(script)
+    })
+}
 
 const schema = z.object({
     full_name: z.string().min(2, 'Name is required'),
@@ -28,6 +55,9 @@ type FormData = z.infer<typeof schema>
 export default function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCartStore()
     const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('cod')
+
+    // Pre-load Razorpay SDK on mount so it's ready when user clicks Pay
+    useEffect(() => { loadRazorpaySDK() }, [])
     const [placing, setPlacing] = useState(false)
 
     const [showSummary, setShowSummary] = useState(false)
@@ -113,27 +143,11 @@ export default function CheckoutPage() {
                     return
                 }
 
-                // 2. Wait for Razorpay SDK to load (up to 5 seconds)
-                const waitForRazorpay = (): Promise<boolean> =>
-                    new Promise((resolve) => {
-                        if ((window as any).Razorpay) return resolve(true)
-                        let attempts = 0
-                        const interval = setInterval(() => {
-                            attempts++
-                            if ((window as any).Razorpay) {
-                                clearInterval(interval)
-                                resolve(true)
-                            } else if (attempts >= 50) {
-                                clearInterval(interval)
-                                resolve(false)
-                            }
-                        }, 100)
-                    })
-
-                const sdkLoaded = await waitForRazorpay()
+                // 2. Load/wait for Razorpay SDK
+                const sdkLoaded = await loadRazorpaySDK()
                 if (!sdkLoaded) {
-                    console.error('Razorpay SDK failed to load within 5 seconds.')
-                    alert('Payment gateway failed to load. Please disable any ad-blockers and try again.');
+                    console.error('Razorpay SDK failed to load.')
+                    alert('Payment gateway could not be loaded. Please check your internet connection and try again.');
                     setPlacing(false);
                     return;
                 }
@@ -198,14 +212,6 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-[#FDECEF]">
-            <Script
-                src="https://checkout.razorpay.com/v1/checkout.js"
-                strategy="afterInteractive"
-                onError={(e) => {
-                    console.error('Failed to load Razorpay checkout script', e)
-                }}
-            />
-
             <div className="bg-white/95 backdrop-blur-sm px-4 py-3 border-b border-[#D9D4CA]/60">
                 <h1 className="text-xl font-bold text-[#2C331F]">Checkout</h1>
             </div>
